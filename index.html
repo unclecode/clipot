@@ -597,7 +597,7 @@
 
     <div class="status" id="status"></div>
 
-    <div class="version">v1.1.1</div>
+    <div class="version">v1.1.2</div>
 
     <div class="settings-modal" id="settingsModal">
         <div class="settings-content">
@@ -903,8 +903,18 @@ ${textToProcess}`
 
         // Hard reset
         resetBtn.addEventListener('click', () => {
-            if (confirm('Are you sure you want to reset all settings? This will clear your API token and all preferences.')) {
+            if (confirm('Are you sure you want to reset all preferences? Your API token will be kept.')) {
+                // Save API token
+                const savedToken = localStorage.getItem('apiToken');
+
+                // Clear everything
                 localStorage.clear();
+
+                // Restore API token
+                if (savedToken) {
+                    localStorage.setItem('apiToken', savedToken);
+                }
+
                 location.reload();
             }
         });
