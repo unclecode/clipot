@@ -1,10 +1,32 @@
 <svg width="192" height="192" viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg">
-  <rect width="192" height="192" fill="#000000" rx="38.400000000000006"/>
+  <!-- Background -->
+  <rect width="192" height="192" fill="#000000" rx="42"/>
+
+  <!-- Clipboard -->
   <g transform="translate(96, 96)">
-    <path d="M-28.799999999999997 -48L0 48L28.799999999999997 -48Z"
-          fill="none" stroke="#ffffff" stroke-width="5.76" stroke-linejoin="round" opacity="0.9"/>
-    <circle r="28.799999999999997" fill="none" stroke="#ffffff" stroke-width="3.84" opacity="0.6"/>
+    <!-- Clipboard base -->
+    <rect x="-35" y="-45" width="70" height="85" rx="8" fill="none" stroke="#ffffff" stroke-width="4" opacity="0.9"/>
+
+    <!-- Clipboard top clip -->
+    <rect x="-20" y="-50" width="40" height="12" rx="4" fill="#ffffff" opacity="0.9"/>
+    <rect x="-15" y="-48" width="30" height="8" rx="3" fill="#000000"/>
+
+    <!-- Text lines on clipboard -->
+    <line x1="-25" y1="-30" x2="25" y2="-30" stroke="#ffffff" stroke-width="2.5" opacity="0.6" stroke-linecap="round"/>
+    <line x1="-25" y1="-18" x2="15" y2="-18" stroke="#ffffff" stroke-width="2.5" opacity="0.6" stroke-linecap="round"/>
+    <line x1="-25" y1="-6" x2="20" y2="-6" stroke="#ffffff" stroke-width="2.5" opacity="0.6" stroke-linecap="round"/>
+
+    <!-- Sparkle/Magic effect (bottom right of clipboard) -->
+    <g transform="translate(25, 20)">
+      <!-- Main sparkle -->
+      <path d="M 0,-12 L 2,-2 L 12,0 L 2,2 L 0,12 L -2,2 L -12,0 L -2,-2 Z"
+            fill="#ffffff" opacity="0.95"/>
+      <!-- Small sparkle 1 -->
+      <path d="M 15,-8 L 16,-4 L 20,-3 L 16,-2 L 15,2 L 14,-2 L 10,-3 L 14,-4 Z"
+            fill="#ffffff" opacity="0.8"/>
+      <!-- Small sparkle 2 -->
+      <path d="M -10,10 L -9,13 L -6,14 L -9,15 L -10,18 L -11,15 L -14,14 L -11,13 Z"
+            fill="#ffffff" opacity="0.7"/>
+    </g>
   </g>
-  <text x="50%" y="70%" text-anchor="middle" font-family="Arial, sans-serif"
-        font-size="23.04" font-weight="bold" fill="#ffffff" opacity="0.8">Touch Up</text>
 </svg>

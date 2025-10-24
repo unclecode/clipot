@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-title" content="Touch Up">
     <meta name="theme-color" content="#000000">
     <meta name="description" content="Polish your thoughts with AI">
@@ -32,6 +33,9 @@
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            /* iOS safe area support */
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
         }
 
         .container {
@@ -81,7 +85,7 @@
 
         .version {
             position: fixed;
-            bottom: 8px;
+            bottom: calc(8px + env(safe-area-inset-bottom));
             right: 8px;
             font-size: 10px;
             color: rgba(255, 255, 255, 0.3);
@@ -576,6 +580,7 @@
                     class="editor"
                     id="editor"
                     placeholder="Start writing or paste your text here..."
+                    readonly
                 ></textarea>
             </div>
         </div>
@@ -592,7 +597,7 @@
 
     <div class="status" id="status"></div>
 
-    <div class="version">v1.0.0</div>
+    <div class="version">v1.1.0</div>
 
     <div class="settings-modal" id="settingsModal">
         <div class="settings-content">
