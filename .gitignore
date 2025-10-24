@@ -1,0 +1,9 @@
+node_modules/
+*.py
+*.base64
+generate-icons.js
+create-png-icons.html
+gen-icon.py
+icon.svg
+INSTALL_SUMMARY.txt
+.DS_Store

@@ -1,0 +1,10 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" fill="#000000" rx="102.4"/>
+  <g transform="translate(256, 256)">
+    <path d="M-76.8 -128L0 128L76.8 -128Z"
+          fill="none" stroke="#ffffff" stroke-width="15.36" stroke-linejoin="round" opacity="0.9"/>
+    <circle r="76.8" fill="none" stroke="#ffffff" stroke-width="10.24" opacity="0.6"/>
+  </g>
+  <text x="50%" y="70%" text-anchor="middle" font-family="Arial, sans-serif"
+        font-size="61.44" font-weight="bold" fill="#ffffff" opacity="0.8">Touch Up</text>
+</svg>
