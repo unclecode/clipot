@@ -335,7 +335,7 @@
 
         .status {
             position: fixed;
-            bottom: 120px;
+            top: calc(80px + env(safe-area-inset-top));
             left: 50%;
             transform: translateX(-50%);
             background: rgba(255, 255, 255, 0.08);
@@ -597,7 +597,7 @@
 
     <div class="status" id="status"></div>
 
-    <div class="version">v1.1.0</div>
+    <div class="version">v1.1.1</div>
 
     <div class="settings-modal" id="settingsModal">
         <div class="settings-content">
