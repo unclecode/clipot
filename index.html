@@ -251,29 +251,22 @@
         .mic-icon-container.transcribing {
             background: rgba(33, 150, 243, 0.15);
             border-color: rgba(33, 150, 243, 0.4);
-            animation: pulse-transcribing 1.2s ease-in-out infinite;
         }
 
         .mic-icon-container.transcribing svg {
-            color: #2196F3;
-            opacity: 1;
+            display: none;
         }
 
-        @keyframes pulse-transcribing {
-            0%, 100% {
-                background: rgba(33, 150, 243, 0.15);
-                box-shadow:
-                    0 8px 32px rgba(0, 0, 0, 0.3),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-                    0 0 0 0 rgba(33, 150, 243, 0.4);
-            }
-            50% {
-                background: rgba(33, 150, 243, 0.25);
-                box-shadow:
-                    0 8px 32px rgba(0, 0, 0, 0.3),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-                    0 0 0 8px rgba(33, 150, 243, 0);
-            }
+        .mic-icon-container .transcribe-char {
+            display: none;
+            font-size: 32px;
+            font-weight: 600;
+            font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+            color: #2196F3;
+        }
+
+        .mic-icon-container.transcribing .transcribe-char {
+            display: block;
         }
 
         .editor-wrapper {
@@ -839,6 +832,7 @@
                             <line x1="12" y1="19" x2="12" y2="23"></line>
                             <line x1="8" y1="23" x2="16" y2="23"></line>
                         </svg>
+                        <span class="transcribe-char" id="transcribeChar"></span>
                     </div>
                 </div>
                 <div class="paste-text">Polish your thoughts</div>
@@ -1022,6 +1016,7 @@
         const modelIndicator = document.getElementById('modelIndicator');
         const modelIndicatorText = document.getElementById('modelIndicatorText');
         const micBtn = document.getElementById('micBtn');
+        const transcribeChar = document.getElementById('transcribeChar');
 
         let originalText = '';
         let autoProcess = true;
@@ -1031,6 +1026,25 @@
         let mediaRecorder = null;
         let audioChunks = [];
         let isRecording = false;
+        let transcribeAnimationId = null;
+
+        // Random character animation for transcribing
+        const TRANSCRIBE_CHARS = 'aHs$^c24Z@.!?#%&*+=ABCDEFGHJKLMNPQRSTUVWXYz0123456789';
+        function startTranscribeAnimation() {
+            if (transcribeAnimationId) return;
+            const animate = () => {
+                transcribeChar.textContent = TRANSCRIBE_CHARS[Math.random() * TRANSCRIBE_CHARS.length | 0];
+                transcribeAnimationId = setTimeout(animate, 20 + Math.random() * 80 | 0);
+            };
+            animate();
+        }
+        function stopTranscribeAnimation() {
+            if (transcribeAnimationId) {
+                clearTimeout(transcribeAnimationId);
+                transcribeAnimationId = null;
+            }
+            transcribeChar.textContent = '';
+        }
         let apiToken = '';
         let forceLanguage = false;
         let outputLanguage = '';
@@ -1597,6 +1611,7 @@ condensed result:`;
                 mediaRecorder.onstop = async () => {
                     micBtn.classList.remove('recording');
                     micBtn.classList.add('transcribing');
+                    startTranscribeAnimation();
 
                     const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
                     const audioUrl = URL.createObjectURL(audioBlob);
@@ -1615,6 +1630,7 @@ condensed result:`;
 
                         if (!text || text.trim().length < 2) {
                             showStatus('Could not transcribe. Try again.', true);
+                            stopTranscribeAnimation();
                             micBtn.classList.remove('transcribing');
                             return;
                         }
@@ -1625,6 +1641,7 @@ condensed result:`;
                         originalText = cleanedText;
                         showEditor();
 
+                        stopTranscribeAnimation();
                         micBtn.classList.remove('transcribing');
 
                         // Auto-process like paste
@@ -1635,6 +1652,7 @@ condensed result:`;
                     } catch (err) {
                         console.error('Transcription error:', err);
                         showStatus('Transcription failed: ' + err.message, true);
+                        stopTranscribeAnimation();
                         micBtn.classList.remove('transcribing');
                     }
                 };
