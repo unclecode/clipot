@@ -103,6 +103,7 @@
             justify-content: center;
             align-items: center;
             padding: 20px 0;
+            max-height: calc(100% - 100px);
         }
 
         .empty-state {
@@ -268,7 +269,7 @@
         }
 
         .bottom-bar {
-            padding: 20px 0 8px 0;
+            padding: 20px 0 50px 0;
             display: flex;
             gap: 12px;
         }
@@ -337,7 +338,7 @@
 
         .status {
             position: fixed;
-            top: calc(80px + env(safe-area-inset-top));
+            top: calc(30px + env(safe-area-inset-top));
             left: 50%;
             transform: translateX(-50%);
             background: rgba(255, 255, 255, 0.08);
@@ -591,6 +592,9 @@
             <button class="action-btn secondary" id="clearBtn" style="display: none;">
                 Clear
             </button>
+            <button class="action-btn secondary" id="condenseBtn" style="display: none;">
+                Condense
+            </button>
             <button class="action-btn" id="touchUpBtn" style="display: none;">
                 <span id="touchUpBtnText">Touch Up</span>
             </button>
@@ -656,6 +660,7 @@
         const touchUpBtn = document.getElementById('touchUpBtn');
         const touchUpBtnText = document.getElementById('touchUpBtnText');
         const clearBtn = document.getElementById('clearBtn');
+        const condenseBtn = document.getElementById('condenseBtn');
         const status = document.getElementById('status');
         const settingsBtn = document.getElementById('settingsBtn');
         const settingsModal = document.getElementById('settingsModal');
@@ -672,6 +677,8 @@
         let apiToken = '';
         let forceLanguage = false;
         let outputLanguage = '';
+        let systemPrompt = '';
+        let conversationHistory = [];
 
         // Load settings from localStorage
         const savedAutoProcess = localStorage.getItem('autoProcess');
@@ -699,6 +706,26 @@
             outputLanguageSelect.value = savedOutputLanguage;
         }
 
+        // Load system prompt from file
+        async function loadSystemPrompt() {
+            try {
+                const response = await fetch('./system-prompt.md');
+                if (response.ok) {
+                    systemPrompt = await response.text();
+                    console.log('System prompt loaded successfully, length:', systemPrompt.length);
+                } else {
+                    console.warn('Could not load system-prompt.md, using fallback');
+                    systemPrompt = 'You are a text refinement assistant. Fix grammar and improve clarity while preserving the original voice.';
+                }
+            } catch (err) {
+                console.warn('Error loading system prompt:', err);
+                systemPrompt = 'You are a text refinement assistant. Fix grammar and improve clarity while preserving the original voice.';
+            }
+        }
+
+        // Load system prompt on page load
+        loadSystemPrompt();
+
         function showStatus(message, isError = false) {
             status.textContent = message;
             status.classList.toggle('error', isError);
@@ -720,10 +747,12 @@
             editorWrapper.classList.remove('active');
             touchUpBtn.style.display = 'none';
             clearBtn.style.display = 'none';
+            condenseBtn.style.display = 'none';
             editor.value = '';
             originalText = '';
             hasProcessed = false;
             touchUpBtnText.textContent = 'Touch Up';
+            conversationHistory = [];
         }
 
         async function pasteFromClipboard() {
@@ -765,6 +794,15 @@
                 return;
             }
 
+            // Check if system prompt is loaded
+            if (!systemPrompt) {
+                showStatus('System prompt not loaded yet, please wait...', true);
+                return;
+            }
+
+            console.log('Starting touch up with token:', apiToken ? 'SET' : 'NOT SET');
+            console.log('System prompt loaded:', systemPrompt ? 'YES' : 'NO');
+
             touchUpBtn.classList.add('loading');
             touchUpBtn.disabled = true;
             clearBtn.disabled = true;
@@ -772,12 +810,137 @@
             editor.classList.add('processing');
 
             try {
+                console.log('Step 1: Building language instruction...');
                 // Build language instruction
                 let languageInstruction = 'IMPORTANT: Maintain the same language as the input text. If the input is in Spanish, respond in Spanish. If it\'s in French, respond in French, etc.';
 
                 if (forceLanguage && outputLanguage) {
                     languageInstruction = `CRITICAL: You MUST respond ONLY in ${outputLanguage}, regardless of the input language.`;
                 }
+
+                console.log('Step 2: Building user message content...');
+                // Build user message content
+                const userMessageContent = `${languageInstruction}
+
+CRITICAL: Respond ONLY with valid JSON in this exact format:
+{"response": "your refined text here"}
+
+Do not include any text outside the JSON structure. Do not use markdown code blocks or backticks.
+
+TEXT TO REFINE:
+${textToProcess}`;
+
+                console.log('Step 3: Setting conversation history...');
+                // Reset conversation history for new refinement
+                conversationHistory = [{
+                    role: 'user',
+                    content: userMessageContent
+                }];
+
+                console.log('Step 4: Making API request...');
+                const response = await fetch('https://api.anthropic.com/v1/messages', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': apiToken,
+                        'anthropic-version': '2023-06-01',
+                        'anthropic-dangerous-direct-browser-access': 'true'
+                    },
+                    body: JSON.stringify({
+                        model: 'claude-haiku-4-5-20251001',
+                        system: systemPrompt,
+                        max_tokens: 2000,
+                        messages: conversationHistory
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('API error response:', response.status, errorText);
+                    throw new Error(`API request failed: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('API response:', data);
+                let responseText = data.content[0].text;
+                console.log('Raw response text:', responseText);
+
+                // Strip markdown code blocks if present
+                responseText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+                console.log('Cleaned response text:', responseText);
+
+                const result = JSON.parse(responseText);
+                console.log('Parsed result:', result);
+
+                // Replace em dashes with comma+space
+                const cleanedResponse = result.response.replace(/—/g, ', ');
+                editor.value = cleanedResponse;
+
+                // Store assistant's response in conversation history
+                conversationHistory.push({
+                    role: 'assistant',
+                    content: responseText
+                });
+
+                // Update button text after first process
+                if (!hasProcessed) {
+                    hasProcessed = true;
+                    touchUpBtnText.textContent = 'Try Again';
+                    condenseBtn.style.display = 'flex';
+                }
+
+                showStatus('Touched up');
+
+                // Copy to clipboard automatically
+                try {
+                    await navigator.clipboard.writeText(cleanedResponse);
+                } catch (e) {
+                    // Clipboard write failed, but that's okay
+                }
+
+            } catch (err) {
+                console.error('=== TOUCH UP ERROR ===');
+                console.error('Error object:', err);
+                console.error('Error message:', err.message);
+                console.error('Error stack:', err.stack);
+                console.error('Error name:', err.name);
+                showStatus('Failed to touch up. Check console for details.', true);
+            } finally {
+                touchUpBtn.classList.remove('loading');
+                touchUpBtn.disabled = false;
+                clearBtn.disabled = false;
+                editorWrapper.classList.remove('processing');
+                editor.classList.remove('processing');
+            }
+        }
+
+        async function condense() {
+            // Check if we have conversation history
+            if (conversationHistory.length === 0) {
+                showStatus('Nothing to condense yet', true);
+                return;
+            }
+
+            // Check if API token is set
+            if (!apiToken) {
+                showStatus('Please set your API token in settings', true);
+                settingsModal.classList.add('show');
+                return;
+            }
+
+            condenseBtn.classList.add('loading');
+            condenseBtn.disabled = true;
+            touchUpBtn.disabled = true;
+            clearBtn.disabled = true;
+            editorWrapper.classList.add('processing');
+            editor.classList.add('processing');
+
+            try {
+                // Append condense request to conversation history
+                conversationHistory.push({
+                    role: 'user',
+                    content: 'Good. Now make it more condensed without losing the main meaning.'
+                });
 
                 const response = await fetch('https://api.anthropic.com/v1/messages', {
                     method: 'POST',
@@ -789,64 +952,55 @@
                     },
                     body: JSON.stringify({
                         model: 'claude-haiku-4-5-20251001',
+                        system: systemPrompt,
                         max_tokens: 2000,
-                        messages: [{
-                            role: 'user',
-                            content: `Touch up the following text and rewrite it in this specific writing style:
-
-STYLE GUIDE:
-Sharp, reflective, and built for high-context readers who already "get it." Blend clarity with conviction. Write like a builder thinking aloud — direct, logical, no fluff. Every line has purpose, often compressing a full argument into a few beats.
-
-Favor rhythm over polish: short sentences, tight logic, conversational tone. Balance technical precision with philosophy — practical yet visionary. Challenge hype, question defaults, and always ground ideas in reality, without losing ambition or curiosity.
-
-Structurally: stance → reasoning → principle. Lead with clarity, back it with insight or experience, and end with a forward-looking takeaway.
-
-${languageInstruction}
-
-CRITICAL: Respond ONLY with valid JSON in this exact format:
-{"response": "your touched up text here"}
-
-Do not include any text outside the JSON structure. Do not use markdown code blocks or backticks.
-
-TEXT TO TOUCH UP:
-${textToProcess}`
-                        }]
+                        messages: conversationHistory
                     })
                 });
 
                 if (!response.ok) {
-                    throw new Error('API request failed');
+                    const errorText = await response.text();
+                    console.error('API error response:', response.status, errorText);
+                    throw new Error(`API request failed: ${response.status}`);
                 }
 
                 const data = await response.json();
+                console.log('API response:', data);
                 let responseText = data.content[0].text;
+                console.log('Raw response text:', responseText);
 
                 // Strip markdown code blocks if present
                 responseText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+                console.log('Cleaned response text:', responseText);
 
                 const result = JSON.parse(responseText);
-                editor.value = result.response;
+                console.log('Parsed result:', result);
 
-                // Update button text after first process
-                if (!hasProcessed) {
-                    hasProcessed = true;
-                    touchUpBtnText.textContent = 'Try Again';
-                }
+                // Replace em dashes with comma+space
+                const cleanedResponse = result.response.replace(/—/g, ', ');
+                editor.value = cleanedResponse;
 
-                showStatus('Touched up');
+                // Store assistant's response in conversation history
+                conversationHistory.push({
+                    role: 'assistant',
+                    content: responseText
+                });
+
+                showStatus('Condensed');
 
                 // Copy to clipboard automatically
                 try {
-                    await navigator.clipboard.writeText(result.response);
+                    await navigator.clipboard.writeText(cleanedResponse);
                 } catch (e) {
                     // Clipboard write failed, but that's okay
                 }
 
             } catch (err) {
                 console.error('Error:', err);
-                showStatus('Failed to touch up. Please try again.', true);
+                showStatus('Failed to condense. Please try again.', true);
             } finally {
-                touchUpBtn.classList.remove('loading');
+                condenseBtn.classList.remove('loading');
+                condenseBtn.disabled = false;
                 touchUpBtn.disabled = false;
                 clearBtn.disabled = false;
                 editorWrapper.classList.remove('processing');
@@ -856,6 +1010,7 @@ ${textToProcess}`
 
         pasteBtn.addEventListener('click', pasteFromClipboard);
         touchUpBtn.addEventListener('click', touchUp);
+        condenseBtn.addEventListener('click', condense);
         clearBtn.addEventListener('click', () => {
             if (confirm('Clear the editor?')) {
                 hideEditor();

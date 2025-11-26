@@ -1,11 +1,11 @@
-# Deploy Touch Up to GitHub Pages
+# Deploy Clipot to GitHub Pages
 
 ## Quick Deploy (5 minutes)
 
 ### Step 1: Create GitHub Repository
 
 1. Go to https://github.com/new
-2. Name: `touch-up` (or any name you like)
+2. Name: `clipot` (or any name you like)
 3. Description: "Polish your thoughts with AI"
 4. Keep it **Public** (required for free GitHub Pages)
 5. Click "Create repository"
@@ -15,10 +15,10 @@
 ```bash
 # If you haven't committed yet
 git add .
-git commit -m "Initial commit - Touch Up PWA"
+git commit -m "Initial commit - Clipot PWA"
 
 # Add your GitHub repo (replace YOUR_USERNAME)
-git remote add origin https://github.com/YOUR_USERNAME/touch-up.git
+git remote add origin https://github.com/YOUR_USERNAME/clipot.git
 git branch -M main
 git push -u origin main
 ```
@@ -36,7 +36,7 @@ git push -u origin main
 
 Your app will be live at:
 ```
-https://YOUR_USERNAME.github.io/touch-up/
+https://YOUR_USERNAME.github.io/clipot/
 ```
 
 ### Step 5: Install on iOS
@@ -90,7 +90,7 @@ If you own a domain:
 2. Enter your custom domain
 3. Add CNAME record in your DNS settings
 
-Example: `touchup.yourdomain.com`
+Example: `clipot.yourdomain.com`
 
 ## Troubleshooting
 

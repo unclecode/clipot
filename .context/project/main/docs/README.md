@@ -1,4 +1,4 @@
-# Touch Up - PWA
+# Clipot
 
 Polish your thoughts with AI. A simple, elegant Progressive Web App for text refinement.
 
@@ -30,7 +30,7 @@ Polish your thoughts with AI. A simple, elegant Progressive Web App for text ref
 ## Usage
 
 1. Tap the clipboard icon or paste text
-2. The app will automatically process (if enabled) or click "Touch Up"
+2. The app will automatically process (if enabled) or tap "Touch Up"
 3. Click "Try Again" for different variations
 4. Text is automatically copied to clipboard
 
