@@ -186,6 +186,96 @@
             max-width: 200px;
         }
 
+        .input-icons {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .mic-icon-container {
+            width: 120px;
+            height: 120px;
+            border-radius: 32px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow:
+                0 8px 32px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .mic-icon-container:active {
+            transform: scale(0.95);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .mic-icon-container svg {
+            width: 48px;
+            height: 48px;
+            color: #fff;
+            opacity: 0.8;
+        }
+
+        .mic-icon-container.recording {
+            background: rgba(255, 59, 48, 0.15);
+            border-color: rgba(255, 59, 48, 0.4);
+            animation: pulse-recording 1.5s ease-in-out infinite;
+        }
+
+        .mic-icon-container.recording svg {
+            color: #ff3b30;
+            opacity: 1;
+        }
+
+        @keyframes pulse-recording {
+            0%, 100% {
+                box-shadow:
+                    0 8px 32px rgba(0, 0, 0, 0.3),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                    0 0 0 0 rgba(255, 59, 48, 0.4);
+            }
+            50% {
+                box-shadow:
+                    0 8px 32px rgba(0, 0, 0, 0.3),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                    0 0 0 12px rgba(255, 59, 48, 0);
+            }
+        }
+
+        .mic-icon-container.transcribing {
+            background: rgba(33, 150, 243, 0.15);
+            border-color: rgba(33, 150, 243, 0.4);
+            animation: pulse-transcribing 1.2s ease-in-out infinite;
+        }
+
+        .mic-icon-container.transcribing svg {
+            color: #2196F3;
+            opacity: 1;
+        }
+
+        @keyframes pulse-transcribing {
+            0%, 100% {
+                background: rgba(33, 150, 243, 0.15);
+                box-shadow:
+                    0 8px 32px rgba(0, 0, 0, 0.3),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                    0 0 0 0 rgba(33, 150, 243, 0.4);
+            }
+            50% {
+                background: rgba(33, 150, 243, 0.25);
+                box-shadow:
+                    0 8px 32px rgba(0, 0, 0, 0.3),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                    0 0 0 8px rgba(33, 150, 243, 0);
+            }
+        }
+
         .editor-wrapper {
             width: 100%;
             height: 100%;
@@ -735,11 +825,21 @@
 
         <div class="editor-container">
             <div class="empty-state" id="emptyState">
-                <div class="paste-icon-container" id="pasteBtn">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-                        <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
-                    </svg>
+                <div class="input-icons">
+                    <div class="paste-icon-container" id="pasteBtn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                            <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                        </svg>
+                    </div>
+                    <div class="mic-icon-container" id="micBtn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                            <line x1="12" y1="19" x2="12" y2="23"></line>
+                            <line x1="8" y1="23" x2="16" y2="23"></line>
+                        </svg>
+                    </div>
                 </div>
                 <div class="paste-text">Polish your thoughts</div>
             </div>
@@ -769,7 +869,7 @@
 
     <div class="status" id="status"></div>
 
-    <div class="version">v1.5.0</div>
+    <div class="version">v1.6.0</div>
 
     <div class="settings-modal" id="settingsModal">
         <div class="settings-content">
@@ -876,6 +976,21 @@
         </div>
     </div>
 
+    <!-- Whisper download overlay -->
+    <div class="download-overlay" id="whisperDownloadOverlay">
+        <div class="download-content">
+            <div class="download-title">Downloading Voice Model</div>
+            <div class="download-subtitle">Whisper Tiny (~39MB)</div>
+
+            <div class="progress-bar-container">
+                <div class="progress-bar-fill" id="whisperProgressBarFill"></div>
+            </div>
+
+            <div class="progress-text" id="whisperProgressText">0%</div>
+            <div class="progress-details" id="whisperProgressDetails">Preparing download...</div>
+        </div>
+    </div>
+
     <script>
         const emptyState = document.getElementById('emptyState');
         const editorWrapper = document.getElementById('editorWrapper');
@@ -906,10 +1021,16 @@
         const modelRadios = document.querySelectorAll('input[name="localModel"]');
         const modelIndicator = document.getElementById('modelIndicator');
         const modelIndicatorText = document.getElementById('modelIndicatorText');
+        const micBtn = document.getElementById('micBtn');
 
         let originalText = '';
         let autoProcess = true;
         let hasProcessed = false;
+
+        // Voice recording state
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let isRecording = false;
         let apiToken = '';
         let forceLanguage = false;
         let outputLanguage = '';
@@ -1462,6 +1583,90 @@ condensed result:`;
             }
         }
 
+        // Voice recording functions
+        async function startRecording() {
+            try {
+                audioChunks = [];
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+
+                mediaRecorder.ondataavailable = (event) => {
+                    audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = async () => {
+                    micBtn.classList.remove('recording');
+                    micBtn.classList.add('transcribing');
+
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const audioUrl = URL.createObjectURL(audioBlob);
+
+                    showStatus('Transcribing...');
+
+                    try {
+                        // Get or initialize Whisper pipeline (lazy load on first use)
+                        const whisper = await window.getWhisperPipeline();
+
+                        const output = await whisper(audioUrl);
+                        const text = Array.isArray(output) ? output[0].text : output.text;
+
+                        // Clean up audio URL
+                        URL.revokeObjectURL(audioUrl);
+
+                        if (!text || text.trim().length < 2) {
+                            showStatus('Could not transcribe. Try again.', true);
+                            micBtn.classList.remove('transcribing');
+                            return;
+                        }
+
+                        // Set text in editor
+                        const cleanedText = text.trim();
+                        editor.value = cleanedText;
+                        originalText = cleanedText;
+                        showEditor();
+
+                        micBtn.classList.remove('transcribing');
+
+                        // Auto-process like paste
+                        if (autoProcess) {
+                            touchUp();
+                        }
+
+                    } catch (err) {
+                        console.error('Transcription error:', err);
+                        showStatus('Transcription failed: ' + err.message, true);
+                        micBtn.classList.remove('transcribing');
+                    }
+                };
+
+                mediaRecorder.start();
+                isRecording = true;
+                micBtn.classList.add('recording');
+                showStatus('Recording... Tap to stop');
+
+            } catch (err) {
+                console.error('Failed to start recording:', err);
+                showStatus('Microphone access denied', true);
+                isRecording = false;
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+            }
+            isRecording = false;
+        }
+
+        async function toggleRecording() {
+            if (isRecording) {
+                stopRecording();
+            } else {
+                await startRecording();
+            }
+        }
+
         async function touchUp() {
             // Route to local model if enabled
             if (useLocalModel) {
@@ -1853,6 +2058,7 @@ ${textToProcess}`;
         }
 
         pasteBtn.addEventListener('click', pasteFromClipboard);
+        micBtn.addEventListener('click', toggleRecording);
         touchUpBtn.addEventListener('click', touchUp);
         condenseBtn.addEventListener('click', condense);
         clearBtn.addEventListener('click', () => {
@@ -2038,6 +2244,73 @@ ${textToProcess}`;
 
         window.transformersPipeline = pipeline;
         window.transformersEnv = env;
+
+        // Whisper pipeline for speech-to-text (lazy loaded on first use)
+        window.whisperPipeline = null;
+        window.whisperLoading = false;
+
+        window.getWhisperPipeline = async function() {
+            if (window.whisperPipeline) {
+                return window.whisperPipeline;
+            }
+            if (window.whisperLoading) {
+                // Wait for loading to complete
+                while (window.whisperLoading && !window.whisperPipeline) {
+                    await new Promise(r => setTimeout(r, 100));
+                }
+                return window.whisperPipeline;
+            }
+
+            window.whisperLoading = true;
+            console.log('Loading Whisper model...');
+
+            // Get overlay elements
+            const overlay = document.getElementById('whisperDownloadOverlay');
+            const progressBar = document.getElementById('whisperProgressBarFill');
+            const progressText = document.getElementById('whisperProgressText');
+            const progressDetails = document.getElementById('whisperProgressDetails');
+
+            // Show overlay
+            overlay.classList.add('show');
+            progressBar.style.width = '0%';
+            progressText.textContent = '0%';
+            progressDetails.textContent = 'Downloading Whisper model...';
+
+            try {
+                window.whisperPipeline = await pipeline(
+                    'automatic-speech-recognition',
+                    'Xenova/whisper-tiny.en',
+                    {
+                        progress_callback: (progress) => {
+                            if (progress.status === 'progress' && progress.progress) {
+                                const percent = Math.round(progress.progress);
+                                console.log('Whisper loading:', percent + '%');
+                                progressBar.style.width = percent + '%';
+                                progressText.textContent = percent + '%';
+                                progressDetails.textContent = `Downloading... ${percent}%`;
+                            } else if (progress.status === 'done') {
+                                progressBar.style.width = '100%';
+                                progressText.textContent = '100%';
+                                progressDetails.textContent = 'Download complete!';
+                            }
+                        }
+                    }
+                );
+                console.log('Whisper model loaded successfully');
+
+                // Hide overlay after brief delay
+                await new Promise(r => setTimeout(r, 500));
+                overlay.classList.remove('show');
+
+                window.whisperLoading = false;
+                return window.whisperPipeline;
+            } catch (err) {
+                console.error('Failed to load Whisper:', err);
+                overlay.classList.remove('show');
+                window.whisperLoading = false;
+                throw err;
+            }
+        };
     </script>
 </body>
 </html>
