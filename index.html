@@ -96,6 +96,41 @@
             pointer-events: none;
         }
 
+        .model-indicator {
+            position: fixed;
+            top: calc(20px + env(safe-area-inset-top));
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+            font-weight: 500;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            z-index: 10;
+        }
+
+        .model-indicator .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #4CAF50;
+        }
+
+        .model-indicator.cloud .dot {
+            background: #2196F3;
+        }
+
+        .model-indicator.local .dot {
+            background: #4CAF50;
+        }
+
         .editor-container {
             flex: 1;
             display: flex;
@@ -393,6 +428,8 @@
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+                max-height: 80%;
+    overflow-y: auto;
         }
 
         .settings-header {
@@ -543,6 +580,130 @@
             background: rgba(255, 59, 48, 0.15);
         }
 
+        /* Model selection radio buttons */
+        .model-option {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin: 8px 0;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .model-option:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .model-option input[type="radio"] {
+            margin-right: 12px;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .model-info {
+            flex: 1;
+        }
+
+        .model-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+
+        .model-desc {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .model-status {
+            margin-top: 12px;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            font-size: 13px;
+            color: #aaa;
+        }
+
+        #modelStatusText {
+            font-weight: 600;
+            color: #fff;
+        }
+
+        /* Download overlay */
+        .download-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .download-overlay.show {
+            display: flex;
+        }
+
+        .download-content {
+            background: rgba(30, 30, 30, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 32px;
+            max-width: 90%;
+            width: 360px;
+            text-align: center;
+        }
+
+        .download-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .download-subtitle {
+            font-size: 14px;
+            color: #888;
+            margin-bottom: 24px;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .progress-text {
+            font-size: 14px;
+            color: #fff;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .progress-details {
+            font-size: 12px;
+            color: #888;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 20px 16px;
@@ -557,6 +718,11 @@
     </style>
 </head>
 <body>
+    <div class="model-indicator cloud" id="modelIndicator">
+        <span class="dot"></span>
+        <span id="modelIndicatorText">Cloud (Haiku)</span>
+    </div>
+
     <div class="container">
         <div class="header">
             <button class="settings-btn" id="settingsBtn">
@@ -603,7 +769,7 @@
 
     <div class="status" id="status"></div>
 
-    <div class="version">v1.2.0</div>
+    <div class="version">v1.5.0</div>
 
     <div class="settings-modal" id="settingsModal">
         <div class="settings-content">
@@ -626,6 +792,49 @@
                 <div class="toggle" id="forceLanguageToggle">
                     <div class="toggle-slider"></div>
                 </div>
+            </div>
+
+            <div class="setting-item">
+                <div class="setting-label">Use Local Model (iPhone)</div>
+                <div class="toggle" id="useLocalModelToggle">
+                    <div class="toggle-slider"></div>
+                </div>
+            </div>
+
+            <div class="setting-item column" id="modelSelectionContainer" style="display: none;">
+                <div class="setting-label">Select Model</div>
+
+                <label class="model-option">
+                    <input type="radio" name="localModel" value="onnx-community/Qwen2.5-0.5B-Instruct" checked>
+                    <div class="model-info">
+                        <div class="model-name">Qwen2.5-0.5B (Best) - 483MB</div>
+                        <div class="model-desc">Best quality for grammar, q4f16</div>
+                    </div>
+                </label>
+
+                <label class="model-option">
+                    <input type="radio" name="localModel" value="HuggingFaceTB/SmolLM2-360M-Instruct">
+                    <div class="model-info">
+                        <div class="model-name">SmolLM2-360M (Fast) - 350MB</div>
+                        <div class="model-desc">Smaller, faster inference</div>
+                    </div>
+                </label>
+
+                <label class="model-option">
+                    <input type="radio" name="localModel" value="onnx-community/Llama-3.2-1B-Instruct">
+                    <div class="model-info">
+                        <div class="model-name">Llama-3.2-1B (Highest) - 650MB</div>
+                        <div class="model-desc">Best quality, larger model</div>
+                    </div>
+                </label>
+
+                <div class="model-status" id="modelStatus">
+                    Status: <span id="modelStatusText">Not Downloaded</span>
+                </div>
+
+                <button class="action-btn" id="downloadModelBtn" style="margin-top: 12px;">
+                    Download Model
+                </button>
             </div>
 
             <div class="setting-item column">
@@ -652,6 +861,21 @@
         </div>
     </div>
 
+    <!-- Download overlay -->
+    <div class="download-overlay" id="downloadOverlay">
+        <div class="download-content">
+            <div class="download-title">Downloading Model</div>
+            <div class="download-subtitle" id="downloadModelName">Qwen2.5-0.5B-Instruct</div>
+
+            <div class="progress-bar-container">
+                <div class="progress-bar-fill" id="progressBarFill"></div>
+            </div>
+
+            <div class="progress-text" id="progressText">0%</div>
+            <div class="progress-details" id="progressDetails">Preparing download...</div>
+        </div>
+    </div>
+
     <script>
         const emptyState = document.getElementById('emptyState');
         const editorWrapper = document.getElementById('editorWrapper');
@@ -670,6 +894,18 @@
         const apiTokenInput = document.getElementById('apiTokenInput');
         const forceLanguageToggle = document.getElementById('forceLanguageToggle');
         const outputLanguageSelect = document.getElementById('outputLanguageSelect');
+        const useLocalModelToggle = document.getElementById('useLocalModelToggle');
+        const modelSelectionContainer = document.getElementById('modelSelectionContainer');
+        const downloadModelBtn = document.getElementById('downloadModelBtn');
+        const modelStatusText = document.getElementById('modelStatusText');
+        const downloadOverlay = document.getElementById('downloadOverlay');
+        const progressBarFill = document.getElementById('progressBarFill');
+        const progressText = document.getElementById('progressText');
+        const progressDetails = document.getElementById('progressDetails');
+        const downloadModelName = document.getElementById('downloadModelName');
+        const modelRadios = document.querySelectorAll('input[name="localModel"]');
+        const modelIndicator = document.getElementById('modelIndicator');
+        const modelIndicatorText = document.getElementById('modelIndicatorText');
 
         let originalText = '';
         let autoProcess = true;
@@ -678,7 +914,15 @@
         let forceLanguage = false;
         let outputLanguage = '';
         let systemPrompt = '';
+        let localPrompt = '';  // Few-shot prompt for local models
+        let localCondensePrompt = '';  // Few-shot prompt for condense
         let conversationHistory = [];
+        let useLocalModel = false;
+        let selectedModel = 'onnx-community/Qwen2.5-0.5B-Instruct';
+        let localPipeline = null;
+        let modelLoading = false;
+        let modelLoadProgress = 0;
+        let modelReady = false;
 
         // Load settings from localStorage
         const savedAutoProcess = localStorage.getItem('autoProcess');
@@ -706,7 +950,24 @@
             outputLanguageSelect.value = savedOutputLanguage;
         }
 
-        // Load system prompt from file
+        const savedUseLocalModel = localStorage.getItem('useLocalModel');
+        if (savedUseLocalModel !== null) {
+            useLocalModel = savedUseLocalModel === 'true';
+            useLocalModelToggle.classList.toggle('active', useLocalModel);
+            modelSelectionContainer.style.display = useLocalModel ? 'block' : 'none';
+        }
+
+        const savedSelectedModel = localStorage.getItem('selectedModel');
+        if (savedSelectedModel) {
+            selectedModel = savedSelectedModel;
+            // Select the correct radio button
+            const radioToSelect = document.querySelector(`input[name="localModel"][value="${savedSelectedModel}"]`);
+            if (radioToSelect) {
+                radioToSelect.checked = true;
+            }
+        }
+
+        // Load system prompt from file (for API)
         async function loadSystemPrompt() {
             try {
                 const response = await fetch('./system-prompt.md');
@@ -723,8 +984,430 @@
             }
         }
 
-        // Load system prompt on page load
+        // Load few-shot prompt for local models
+        async function loadLocalPrompt() {
+            try {
+                const response = await fetch('./local-prompt.md');
+                if (response.ok) {
+                    localPrompt = await response.text();
+                    console.log('Local prompt loaded successfully, length:', localPrompt.length);
+                } else {
+                    console.warn('Could not load local-prompt.md');
+                }
+            } catch (err) {
+                console.warn('Error loading local prompt:', err);
+            }
+        }
+
+        // Load few-shot prompt for condense (local models)
+        async function loadLocalCondensePrompt() {
+            try {
+                const response = await fetch('./local-condense-prompt.md');
+                if (response.ok) {
+                    localCondensePrompt = await response.text();
+                    console.log('Local condense prompt loaded, length:', localCondensePrompt.length);
+                } else {
+                    console.warn('Could not load local-condense-prompt.md');
+                }
+            } catch (err) {
+                console.warn('Error loading local condense prompt:', err);
+            }
+        }
+
+        // Update model indicator display
+        function updateModelIndicator() {
+            if (useLocalModel) {
+                const modelName = selectedModel.split('/')[1] || selectedModel;
+                // Shorten the name for display
+                let shortName = modelName;
+                if (modelName.includes('Qwen')) shortName = 'Qwen2.5';
+                else if (modelName.includes('SmolLM')) shortName = 'SmolLM2';
+                else if (modelName.includes('Llama')) shortName = 'Llama3.2';
+
+                modelIndicator.classList.remove('cloud');
+                modelIndicator.classList.add('local');
+                modelIndicatorText.textContent = `Local (${shortName})`;
+            } else {
+                modelIndicator.classList.remove('local');
+                modelIndicator.classList.add('cloud');
+                modelIndicatorText.textContent = 'Cloud (Haiku)';
+            }
+        }
+
+        // Load prompts on page load
         loadSystemPrompt();
+        loadLocalPrompt();
+        loadLocalCondensePrompt();
+
+        // Initialize model indicator
+        updateModelIndicator();
+
+        // Auto-initialize local model if it was previously enabled
+        // This will load from IndexedDB cache (fast) if model was downloaded before
+        async function initLocalModelIfNeeded() {
+            if (!useLocalModel || !selectedModel) return;
+
+            // Wait for Transformers.js to load
+            let waitCount = 0;
+            while (!window.transformersPipeline && waitCount < 50) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                waitCount++;
+            }
+
+            if (!window.transformersPipeline) {
+                console.log('Transformers.js not available, skipping auto-init');
+                return;
+            }
+
+            console.log('Auto-initializing local model from cache...');
+            modelStatusText.textContent = 'Loading...';
+            modelStatusText.style.color = '#ffa500';
+
+            try {
+                const hasWebGPU = 'gpu' in navigator;
+                const pipelineOptions = {
+                    dtype: "q4f16",
+                    progress_callback: (progress) => {
+                        if (progress.status === 'progress' && progress.progress) {
+                            console.log('Loading from cache:', Math.round(progress.progress) + '%');
+                        }
+                    }
+                };
+                if (hasWebGPU) {
+                    pipelineOptions.device = "webgpu";
+                }
+
+                localPipeline = await window.transformersPipeline(
+                    'text-generation',
+                    selectedModel,
+                    pipelineOptions
+                );
+
+                modelReady = true;
+                modelStatusText.textContent = 'Ready ✓';
+                modelStatusText.style.color = '#4CAF50';
+                console.log('Local model loaded from cache');
+
+            } catch (err) {
+                console.log('Model not in cache or error:', err.message);
+                modelStatusText.textContent = 'Not Downloaded';
+                modelStatusText.style.color = '#fff';
+            }
+        }
+
+        // Run auto-init after page loads
+        initLocalModelIfNeeded();
+
+        // Download model with overlay
+        async function downloadModel() {
+            if (modelLoading) {
+                showStatus('Model is already downloading...', true);
+                return;
+            }
+
+            modelLoading = true;
+            modelLoadProgress = 0;
+            modelReady = false;
+
+            // Model size info (q4f16 quantization sizes)
+            const modelSizes = {
+                'onnx-community/Qwen2.5-0.5B-Instruct': 483,
+                'HuggingFaceTB/SmolLM2-360M-Instruct': 350,
+                'onnx-community/Llama-3.2-1B-Instruct': 650
+            };
+            const modelSize = modelSizes[selectedModel] || 400;
+            const modelName = selectedModel.split('/')[1];
+
+            // Show overlay
+            downloadModelName.textContent = modelName;
+            downloadOverlay.classList.add('show');
+            progressBarFill.style.width = '0%';
+            progressText.textContent = '0%';
+            progressDetails.textContent = `Downloading ${modelSize}MB...`;
+
+            try {
+                // Wait for transformers to be available
+                let waitCount = 0;
+                while (!window.transformersPipeline && waitCount < 50) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    waitCount++;
+                }
+
+                if (!window.transformersPipeline) {
+                    throw new Error('Transformers.js failed to load from CDN');
+                }
+
+                console.log('Downloading model:', selectedModel);
+
+                // Progress simulation (update every 2 seconds)
+                const progressInterval = setInterval(() => {
+                    if (modelLoadProgress < 90) {
+                        modelLoadProgress += 5;
+                        progressBarFill.style.width = modelLoadProgress + '%';
+                        progressText.textContent = modelLoadProgress + '%';
+                        progressDetails.textContent = `Downloading ${modelSize}MB... ${modelLoadProgress}%`;
+                    }
+                }, 2000);
+
+                // Check WebGPU support
+                const hasWebGPU = 'gpu' in navigator;
+                console.log('WebGPU support:', hasWebGPU);
+
+                // Load the pipeline with optimized settings
+                // dtype: "q4f16" = 4-bit weights + fp16 activations (smallest & fastest)
+                // device: "webgpu" for GPU acceleration (100x faster than WASM)
+                const pipelineOptions = {
+                    dtype: "q4f16",
+                    progress_callback: (progress) => {
+                        console.log('Model download progress:', progress);
+                        // Update progress bar with real progress if available
+                        if (progress.status === 'progress' && progress.progress) {
+                            const percent = Math.round(progress.progress);
+                            modelLoadProgress = percent;
+                            progressBarFill.style.width = percent + '%';
+                            progressText.textContent = percent + '%';
+                            progressDetails.textContent = `Downloading... ${percent}%`;
+                        }
+                    }
+                };
+
+                // Use WebGPU if available for faster inference
+                if (hasWebGPU) {
+                    pipelineOptions.device = "webgpu";
+                    console.log('Using WebGPU acceleration');
+                } else {
+                    console.log('WebGPU not available, using WASM backend');
+                }
+
+                localPipeline = await window.transformersPipeline(
+                    'text-generation',
+                    selectedModel,
+                    pipelineOptions
+                );
+
+                clearInterval(progressInterval);
+                modelLoadProgress = 100;
+                progressBarFill.style.width = '100%';
+                progressText.textContent = '100%';
+                progressDetails.textContent = 'Download complete!';
+
+                // Wait a moment to show 100%
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                // Hide overlay
+                downloadOverlay.classList.remove('show');
+
+                // Update status
+                modelReady = true;
+                modelLoading = false;
+                modelStatusText.textContent = 'Ready ✓';
+                modelStatusText.style.color = '#4CAF50';
+
+                showStatus('✓ Model ready! You can now use local processing.');
+                console.log('Model loaded successfully');
+
+            } catch (err) {
+                modelLoading = false;
+                modelLoadProgress = 0;
+                modelReady = false;
+
+                console.error('Failed to load local model:', err);
+                console.error('Error details:', err.message, err.stack);
+
+                // Hide overlay
+                downloadOverlay.classList.remove('show');
+
+                // Update status
+                modelStatusText.textContent = 'Download Failed';
+                modelStatusText.style.color = '#ff3b30';
+
+                showStatus(`Model download failed: ${err.message}`, true);
+            }
+        }
+
+        // Process text with local model using completion mode (not chat)
+        // Single prompt = instructions + few-shot examples + user text + template
+        async function processWithLocalModel(text) {
+            if (!localPipeline) {
+                console.error('Model not loaded');
+                return null;
+            }
+
+            if (!localPrompt) {
+                console.error('Local prompt not loaded');
+                return null;
+            }
+
+            // Build single completion prompt:
+            // [instructions + examples from local-prompt.md]
+            // user text:
+            // [user's input]
+            //
+            // edit result:
+            // [model completes here]
+            const fullPrompt = `${localPrompt}user text:
+${text}
+
+edit result:`;
+
+            // Dynamic max_tokens: word_count * 5 (tokenization overhead)
+            // Min 50, Max 512
+            const wordCount = text.trim().split(/\s+/).length;
+            const maxTokens = Math.max(50, Math.min(wordCount * 5, 512));
+
+            console.log('=== Local Model Completion ===');
+            console.log(`Input words: ${wordCount}, max_tokens: ${maxTokens}`);
+            console.log('Prompt length:', fullPrompt.length);
+            console.log('--- FULL PROMPT START ---');
+            console.log(fullPrompt);
+            console.log('--- FULL PROMPT END ---');
+
+            try {
+                const startTime = Date.now();
+
+                // Completion mode settings
+                const result = await localPipeline(fullPrompt, {
+                    max_new_tokens: maxTokens,
+                    temperature: 0.2,
+                    do_sample: true,
+                    top_p: 0.9,
+                    top_k: 30,
+                    repetition_penalty: 1.05,
+                    return_full_text: false,  // Only return the generated part, not the prompt
+                    stop: ["user text:", "\n\nuser text", "\nuser text"]
+                });
+
+                const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+                console.log(`Completed in ${duration}s`);
+
+                // Get generated text
+                let generated = result[0].generated_text;
+                console.log('Raw output:', generated);
+
+                // If return_full_text didn't work, extract manually
+                if (generated.includes(text)) {
+                    // Find the last "edit result:" and get text after it
+                    const marker = 'edit result:';
+                    const lastIndex = generated.lastIndexOf(marker);
+                    if (lastIndex !== -1) {
+                        generated = generated.substring(lastIndex + marker.length);
+                    }
+                }
+
+                // Clean up: remove any "user text:" if stop token didn't catch it
+                const stopIndex = generated.toLowerCase().indexOf('user text:');
+                if (stopIndex !== -1) {
+                    generated = generated.substring(0, stopIndex);
+                }
+
+                // Trim whitespace
+                generated = generated.trim();
+
+                console.log('Final output:', generated);
+                return generated;
+
+            } catch (err) {
+                console.error('Local model error:', err.message);
+                return null;
+            }
+        }
+
+        // Condense text with local model using completion mode
+        async function processCondenseWithLocalModel(text) {
+            if (!localPipeline) {
+                console.error('Model not loaded');
+                return null;
+            }
+
+            if (!localCondensePrompt) {
+                console.error('Local condense prompt not loaded');
+                return null;
+            }
+
+            // Build single completion prompt for condensing
+            const fullPrompt = `${localCondensePrompt}user text:
+${text}
+
+condensed result:`;
+
+            // For condense, we want shorter output - use word_count * 3
+            const wordCount = text.trim().split(/\s+/).length;
+            const maxTokens = Math.max(30, Math.min(wordCount * 3, 300));
+
+            console.log('=== Local Model Condense ===');
+            console.log(`Input words: ${wordCount}, max_tokens: ${maxTokens}`);
+            console.log('--- FULL PROMPT START ---');
+            console.log(fullPrompt);
+            console.log('--- FULL PROMPT END ---');
+
+            try {
+                const startTime = Date.now();
+
+                const result = await localPipeline(fullPrompt, {
+                    max_new_tokens: maxTokens,
+                    temperature: 0.2,
+                    do_sample: true,
+                    top_p: 0.9,
+                    top_k: 30,
+                    repetition_penalty: 1.05,
+                    return_full_text: false,
+                    stop: ["user text:", "\n\nuser text", "\nuser text"]
+                });
+
+                const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+                console.log(`Condense completed in ${duration}s`);
+
+                let generated = result[0].generated_text;
+                console.log('Raw output:', generated);
+
+                // For SmolLM2 and other models that don't respect stop tokens well:
+                // We need to extract only the FIRST line(s) of the generated output
+                // before any "user text:" appears
+
+                // First, check if the model echoed back the full prompt
+                if (generated.includes(text)) {
+                    // Find where our input text ends in the output
+                    const inputEndMarker = 'condensed result:';
+                    const inputEndIndex = generated.lastIndexOf(inputEndMarker);
+                    if (inputEndIndex !== -1) {
+                        // Get everything after "condensed result:" (our completion)
+                        generated = generated.substring(inputEndIndex + inputEndMarker.length);
+                    }
+                }
+
+                // Basic cleanup: stop at "user text:" (applies to all models)
+                const userTextIndex = generated.toLowerCase().indexOf('user text:');
+                if (userTextIndex !== -1) {
+                    generated = generated.substring(0, userTextIndex);
+                }
+
+                // Aggressive cleanup only for SmolLM2 (doesn't respect stop tokens well)
+                if (selectedModel.includes('SmolLM')) {
+                    // Stop at "condensed result:" if model starts generating another example
+                    const condensedIndex = generated.toLowerCase().indexOf('condensed result:');
+                    if (condensedIndex !== -1) {
+                        generated = generated.substring(0, condensedIndex);
+                    }
+
+                    // Stop at double newline followed by any text (likely a new example)
+                    const doubleNewlineIndex = generated.indexOf('\n\n');
+                    if (doubleNewlineIndex !== -1 && doubleNewlineIndex < generated.length - 2) {
+                        const afterNewline = generated.substring(doubleNewlineIndex + 2).trim();
+                        if (afterNewline.length > 10) {
+                            generated = generated.substring(0, doubleNewlineIndex);
+                        }
+                    }
+                }
+
+                generated = generated.trim();
+                console.log('Final output:', generated);
+                return generated;
+
+            } catch (err) {
+                console.error('Local model condense error:', err.message);
+                return null;
+            }
+        }
 
         function showStatus(message, isError = false) {
             status.textContent = message;
@@ -780,6 +1463,108 @@
         }
 
         async function touchUp() {
+            // Route to local model if enabled
+            if (useLocalModel) {
+                const textToProcess = originalText.trim();
+                if (!textToProcess) {
+                    showStatus('Please enter some text first', true);
+                    return;
+                }
+
+                // Check if model is ready
+                if (!modelReady || !localPipeline) {
+                    showStatus('Please download the model first (Settings → Download Model)', true);
+                    return;
+                }
+
+                // Check if system prompt is loaded
+                if (!systemPrompt) {
+                    showStatus('System prompt not loaded yet, please wait...', true);
+                    return;
+                }
+
+                console.log('Routing to local model processing...');
+
+                touchUpBtn.classList.add('loading');
+                touchUpBtn.disabled = true;
+                clearBtn.disabled = true;
+                condenseBtn.disabled = true;
+                editorWrapper.classList.add('processing');
+                editor.classList.add('processing');
+
+                try {
+                    const result = await processWithLocalModel(textToProcess);
+
+                    if (!result) {
+                        // Local processing failed, fallback to API
+                        console.log('Local processing failed, falling back to API...');
+                        showStatus('Local processing failed. Using API...', false);
+
+                        // Continue with API processing below
+                        useLocalModel = false; // Temporary disable for this request
+                        touchUpBtn.classList.remove('loading');
+                        touchUpBtn.disabled = false;
+                        clearBtn.disabled = false;
+                        condenseBtn.disabled = false;
+                        editorWrapper.classList.remove('processing');
+                        editor.classList.remove('processing');
+
+                        // Re-enable local model for next time
+                        setTimeout(() => { useLocalModel = true; }, 100);
+
+                        // Fall through to API call below
+                    } else {
+                        // Success with local model
+                        // Replace em dashes
+                        const cleanedResponse = result.replace(/—/g, ', ');
+                        editor.value = cleanedResponse;
+
+                        // Reset conversation history (local doesn't use it)
+                        conversationHistory = [];
+
+                        // Update UI
+                        if (!hasProcessed) {
+                            hasProcessed = true;
+                            touchUpBtnText.textContent = 'Try Again';
+                            condenseBtn.style.display = 'flex';
+                        }
+
+                        showStatus('✓ Touched up (Local)');
+
+                        // Copy to clipboard
+                        try {
+                            await navigator.clipboard.writeText(cleanedResponse);
+                        } catch (e) {
+                            // Clipboard failed, continue
+                        }
+
+                        touchUpBtn.classList.remove('loading');
+                        touchUpBtn.disabled = false;
+                        clearBtn.disabled = false;
+                        condenseBtn.disabled = false;
+                        editorWrapper.classList.remove('processing');
+                        editor.classList.remove('processing');
+
+                        return; // Exit, don't call API
+                    }
+                } catch (err) {
+                    console.error('Local touchUp error:', err);
+                    showStatus('Local processing error. Using API...', true);
+
+                    // Fallback to API on error
+                    useLocalModel = false;
+                    touchUpBtn.classList.remove('loading');
+                    touchUpBtn.disabled = false;
+                    clearBtn.disabled = false;
+                    condenseBtn.disabled = false;
+                    editorWrapper.classList.remove('processing');
+                    editor.classList.remove('processing');
+
+                    setTimeout(() => { useLocalModel = true; }, 100);
+                    // Fall through to API call
+                }
+            }
+
             // Use original text for processing
             const textToProcess = originalText.trim();
             if (!textToProcess) {
@@ -915,16 +1700,10 @@ ${textToProcess}`;
         }
 
         async function condense() {
-            // Check if we have conversation history
-            if (conversationHistory.length === 0) {
-                showStatus('Nothing to condense yet', true);
-                return;
-            }
-
-            // Check if API token is set
-            if (!apiToken) {
-                showStatus('Please set your API token in settings', true);
-                settingsModal.classList.add('show');
+            // Get current text from editor to condense
+            const textToCondense = editor.value.trim();
+            if (!textToCondense) {
+                showStatus('Nothing to condense', true);
                 return;
             }
 
@@ -934,6 +1713,71 @@ ${textToProcess}`;
             clearBtn.disabled = true;
             editorWrapper.classList.add('processing');
             editor.classList.add('processing');
+
+            // Route to local model if enabled
+            if (useLocalModel) {
+                if (!modelReady || !localPipeline) {
+                    showStatus('Please download the model first', true);
+                    condenseBtn.classList.remove('loading');
+                    condenseBtn.disabled = false;
+                    touchUpBtn.disabled = false;
+                    clearBtn.disabled = false;
+                    editorWrapper.classList.remove('processing');
+                    editor.classList.remove('processing');
+                    return;
+                }
+
+                try {
+                    const result = await processCondenseWithLocalModel(textToCondense);
+
+                    if (result) {
+                        const cleanedResponse = result.replace(/—/g, ', ');
+                        editor.value = cleanedResponse;
+                        showStatus('Condensed (Local)');
+
+                        try {
+                            await navigator.clipboard.writeText(cleanedResponse);
+                        } catch (e) {}
+                    } else {
+                        showStatus('Condense failed', true);
+                    }
+                } catch (err) {
+                    console.error('Local condense error:', err);
+                    showStatus('Condense failed', true);
+                } finally {
+                    condenseBtn.classList.remove('loading');
+                    condenseBtn.disabled = false;
+                    touchUpBtn.disabled = false;
+                    clearBtn.disabled = false;
+                    editorWrapper.classList.remove('processing');
+                    editor.classList.remove('processing');
+                }
+                return;
+            }
+
+            // API mode - check requirements
+            if (conversationHistory.length === 0) {
+                showStatus('Nothing to condense yet', true);
+                condenseBtn.classList.remove('loading');
+                condenseBtn.disabled = false;
+                touchUpBtn.disabled = false;
+                clearBtn.disabled = false;
+                editorWrapper.classList.remove('processing');
+                editor.classList.remove('processing');
+                return;
+            }
+
+            if (!apiToken) {
+                showStatus('Please set your API token in settings', true);
+                settingsModal.classList.add('show');
+                condenseBtn.classList.remove('loading');
+                condenseBtn.disabled = false;
+                touchUpBtn.disabled = false;
+                clearBtn.disabled = false;
+                editorWrapper.classList.remove('processing');
+                editor.classList.remove('processing');
+                return;
+            }
 
             try {
                 // Append condense request to conversation history
@@ -1058,6 +1902,61 @@ ${textToProcess}`;
             localStorage.setItem('outputLanguage', outputLanguage);
         });
 
+        // Local model toggle
+        useLocalModelToggle.addEventListener('click', () => {
+            useLocalModel = !useLocalModel;
+            useLocalModelToggle.classList.toggle('active', useLocalModel);
+            modelSelectionContainer.style.display = useLocalModel ? 'block' : 'none';
+            localStorage.setItem('useLocalModel', useLocalModel);
+
+            console.log('Local model toggle:', useLocalModel ? 'ENABLED' : 'DISABLED');
+            console.log('Selected model:', selectedModel);
+
+            // Clear pipeline if disabling
+            if (!useLocalModel && localPipeline) {
+                localPipeline = null;
+                modelLoading = false;
+            }
+
+            // Update the indicator
+            updateModelIndicator();
+
+            // Show info message
+            if (useLocalModel) {
+                showStatus('Local mode enabled. Please download a model to use it.');
+            }
+        });
+
+        // Model selection (radio buttons)
+        modelRadios.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    selectedModel = e.target.value;
+                    localStorage.setItem('selectedModel', selectedModel);
+                    console.log('Model selected:', selectedModel);
+
+                    // Update the indicator
+                    updateModelIndicator();
+
+                    // Clear pipeline if changing models
+                    if (localPipeline) {
+                        localPipeline = null;
+                        modelReady = false;
+                        modelLoading = false;
+                        modelStatusText.textContent = 'Not Downloaded';
+                        modelStatusText.style.color = '#fff';
+                        showStatus('Model changed. Please download the new model.');
+                    }
+                }
+            });
+        });
+
+        // Download button
+        downloadModelBtn.addEventListener('click', async () => {
+            console.log('Download button clicked');
+            await downloadModel();
+        });
+
         // Hard reset
         resetBtn.addEventListener('click', () => {
             if (confirm('Are you sure you want to reset all preferences? Your API token will be kept.')) {
@@ -1083,6 +1982,27 @@ ${textToProcess}`;
             }
         });
 
+        // Double-tap to copy on iOS
+        let lastTap = 0;
+        editor.addEventListener('touchend', async (e) => {
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTap;
+            if (tapLength < 300 && tapLength > 0) {
+                // Double tap detected
+                e.preventDefault();
+                const text = editor.value.trim();
+                if (text) {
+                    try {
+                        await navigator.clipboard.writeText(text);
+                        showStatus('Copied!');
+                    } catch (err) {
+                        showStatus('Could not copy', true);
+                    }
+                }
+            }
+            lastTap = currentTime;
+        });
+
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
             if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
@@ -1105,6 +2025,19 @@ ${textToProcess}`;
                     });
             });
         }
+    </script>
+
+    <!-- Transformers.js for local model -->
+    <script type="module">
+        import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.0';
+
+        // Configure for better mobile performance
+        env.allowLocalModels = false;
+        env.allowRemoteModels = true;
+        env.backends.onnx.wasm.numThreads = 4; // iPhone 14 has 6 cores
+
+        window.transformersPipeline = pipeline;
+        window.transformersEnv = env;
     </script>
 </body>
 </html>
