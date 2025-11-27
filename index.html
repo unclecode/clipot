@@ -280,12 +280,16 @@
             line-height: 40px;
             text-align: center;
             width: 32px;
-            animation: char-scroll 0.8s steps(16) infinite;
+            /* Force GPU compositing for iOS Safari resilience */
+            will-change: transform;
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
+            animation: char-scroll 1.2s linear infinite;
         }
 
         @keyframes char-scroll {
-            0% { transform: translateY(0); }
-            100% { transform: translateY(-640px); }
+            0% { transform: translate3d(0, 0, 0); }
+            100% { transform: translate3d(0, -640px, 0); }
         }
 
         .editor-wrapper {
@@ -714,7 +718,7 @@
 
         .status {
             position: fixed;
-            top: calc(30px + env(safe-area-inset-top));
+            top: calc(50px + env(safe-area-inset-top));
             left: 50%;
             transform: translateX(-50%);
             background: rgba(255, 255, 255, 0.08);
@@ -1128,7 +1132,7 @@
 
     <div class="status" id="status"></div>
 
-    <!-- Action Sheet for Condense/Custom -->
+    <!-- Action Sheet for Style Options -->
     <div class="action-sheet-overlay" id="actionSheetOverlay">
         <div class="action-sheet">
             <div class="action-sheet-group">
@@ -1139,6 +1143,47 @@
                             <path d="M4 12h16M4 6h16M4 18h10"></path>
                         </svg>
                         Condense
+                    </div>
+                    <div class="action-sheet-item" data-action="expand">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 12h16M4 6h16M4 18h16"></path>
+                            <path d="M12 2v4M12 18v4"></path>
+                        </svg>
+                        Expand
+                    </div>
+                    <div class="action-sheet-item" data-action="formal">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                            <path d="M8 2v4M16 2v4"></path>
+                        </svg>
+                        Formal
+                    </div>
+                    <div class="action-sheet-item" data-action="casual">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+                            <line x1="9" y1="9" x2="9.01" y2="9"></line>
+                            <line x1="15" y1="9" x2="15.01" y2="9"></line>
+                        </svg>
+                        Casual
+                    </div>
+                    <div class="action-sheet-item" data-action="bullets">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="8" y1="6" x2="21" y2="6"></line>
+                            <line x1="8" y1="12" x2="21" y2="12"></line>
+                            <line x1="8" y1="18" x2="21" y2="18"></line>
+                            <circle cx="4" cy="6" r="1" fill="currentColor"></circle>
+                            <circle cx="4" cy="12" r="1" fill="currentColor"></circle>
+                            <circle cx="4" cy="18" r="1" fill="currentColor"></circle>
+                        </svg>
+                        Bullet List
+                    </div>
+                    <div class="action-sheet-item" data-action="email">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                            <path d="M22 6l-10 7L2 6"></path>
+                        </svg>
+                        Email
                     </div>
                     <div class="action-sheet-item has-sub" data-action="custom">
                         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1167,15 +1212,20 @@
         </div>
     </div>
 
-    <div class="version">v1.8.2</div>
+    <div class="version">v1.9.1</div>
 
     <div class="settings-modal" id="settingsModal">
         <div class="settings-content">
             <div class="settings-header">Settings</div>
 
             <div class="setting-item column">
-                <div class="setting-label">API Token</div>
+                <div class="setting-label">API Token (Anthropic)</div>
                 <input type="password" class="setting-input" id="apiTokenInput" placeholder="sk-ant-api03-...">
+            </div>
+
+            <div class="setting-item column">
+                <div class="setting-label">API Key (ElevenLabs - voice)</div>
+                <input type="password" class="setting-input" id="elevenLabsKeyInput" placeholder="xi-...">
             </div>
 
             <div class="setting-item">
@@ -1195,6 +1245,13 @@
             <div class="setting-item">
                 <div class="setting-label">Use Local Model (iPhone)</div>
                 <div class="toggle" id="useLocalModelToggle">
+                    <div class="toggle-slider"></div>
+                </div>
+            </div>
+
+            <div class="setting-item">
+                <div class="setting-label">Use Local Transcription (Whisper)</div>
+                <div class="toggle" id="useLocalTranscriptionToggle">
                     <div class="toggle-slider"></div>
                 </div>
             </div>
@@ -1329,6 +1386,8 @@
         const modelIndicator = document.getElementById('modelIndicator');
         const modelIndicatorText = document.getElementById('modelIndicatorText');
         const micBtn = document.getElementById('micBtn');
+        const elevenLabsKeyInput = document.getElementById('elevenLabsKeyInput');
+        const useLocalTranscriptionToggle = document.getElementById('useLocalTranscriptionToggle');
 
         let originalText = '';
         let autoProcess = true;
@@ -1338,6 +1397,7 @@
         let mediaRecorder = null;
         let audioChunks = [];
         let isRecording = false;
+        let pendingStream = null; // Pre-warmed stream from touchstart
 
         // Expose for console testing (CSS animation, no JS needed)
         window.testTranscribe = (duration = 3000) => {
@@ -1360,6 +1420,10 @@
         let modelLoading = false;
         let modelLoadProgress = 0;
         let modelReady = false;
+
+        // Voice transcription settings
+        let elevenLabsKey = '';
+        let useLocalTranscription = false;
 
         // Load settings from localStorage
         const savedAutoProcess = localStorage.getItem('autoProcess');
@@ -1402,6 +1466,18 @@
             if (radioToSelect) {
                 radioToSelect.checked = true;
             }
+        }
+
+        const savedElevenLabsKey = localStorage.getItem('elevenLabsKey');
+        if (savedElevenLabsKey) {
+            elevenLabsKey = savedElevenLabsKey;
+            elevenLabsKeyInput.value = savedElevenLabsKey;
+        }
+
+        const savedUseLocalTranscription = localStorage.getItem('useLocalTranscription');
+        if (savedUseLocalTranscription !== null) {
+            useLocalTranscription = savedUseLocalTranscription === 'true';
+            useLocalTranscriptionToggle.classList.toggle('active', useLocalTranscription);
         }
 
         // Load system prompt from file (for API)
@@ -1915,11 +1991,34 @@ condensed result:`;
             }
         }
 
+        // ElevenLabs transcription function
+        async function transcribeWithElevenLabs(audioBlob) {
+            if (!elevenLabsKey) {
+                throw new Error('ElevenLabs API key not set');
+            }
+
+            const formData = new FormData();
+            formData.append('file', audioBlob, 'recording.webm');
+            formData.append('model_id', 'scribe_v1');
+
+            const response = await fetch('https://api.elevenlabs.io/v1/speech-to-text', {
+                method: 'POST',
+                headers: { 'xi-api-key': elevenLabsKey },
+                body: formData
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.detail?.message || 'Transcription failed');
+            }
+            return data.text || '';
+        }
+
         // Voice recording functions
-        async function startRecording() {
+        async function startRecording(existingStream = null) {
             try {
                 audioChunks = [];
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const stream = existingStream || await navigator.mediaDevices.getUserMedia({ audio: true });
                 mediaRecorder = new MediaRecorder(stream);
 
                 mediaRecorder.ondataavailable = (event) => {
@@ -1931,23 +2030,26 @@ condensed result:`;
                     micBtn.classList.add('transcribing');
 
                     const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                    const audioUrl = URL.createObjectURL(audioBlob);
 
                     showStatus('Transcribing...');
 
                     try {
-                        // Get or initialize Whisper pipeline (lazy load on first use)
-                        const whisper = await window.getWhisperPipeline();
+                        let text;
 
-                        // Use chunking for longer audio (30s chunks with 5s overlap)
-                        const output = await whisper(audioUrl, {
-                            chunk_length_s: 30,
-                            stride_length_s: 5
-                        });
-                        const text = Array.isArray(output) ? output[0].text : output.text;
-
-                        // Clean up audio URL
-                        URL.revokeObjectURL(audioUrl);
+                        if (useLocalTranscription) {
+                            // Local Whisper transcription
+                            const audioUrl = URL.createObjectURL(audioBlob);
+                            const whisper = await window.getWhisperPipeline();
+                            const output = await whisper(audioUrl, {
+                                chunk_length_s: 30,
+                                stride_length_s: 5
+                            });
+                            text = Array.isArray(output) ? output[0].text : output.text;
+                            URL.revokeObjectURL(audioUrl);
+                        } else {
+                            // ElevenLabs API transcription (default)
+                            text = await transcribeWithElevenLabs(audioBlob);
+                        }
 
                         if (!text || text.trim().length < 2) {
                             showStatus('Could not transcribe. Try again.', true);
@@ -1999,7 +2101,25 @@ condensed result:`;
             if (isRecording) {
                 stopRecording();
             } else {
-                await startRecording();
+                // Check if voice transcription is configured
+                if (!useLocalTranscription && !elevenLabsKey) {
+                    showStatus('Please add ElevenLabs API key in settings', true);
+                    settingsModal.classList.add('show');
+                    return;
+                }
+
+                // Use pre-warmed stream if available
+                let stream = null;
+                if (pendingStream) {
+                    try {
+                        stream = await pendingStream;
+                    } catch (e) {
+                        // Pre-warm failed, will get fresh stream in startRecording
+                        console.log('Pre-warm stream failed, getting fresh');
+                    }
+                    pendingStream = null;
+                }
+                await startRecording(stream);
             }
         }
 
@@ -2393,6 +2513,155 @@ ${textToProcess}`;
             }
         }
 
+        // Style prompts for transformations
+        const STYLE_PROMPTS = {
+            expand: {
+                instruction: 'Expand this text with more details, explanations, and context while keeping the core message. Add relevant elaboration without being redundant.',
+                statusText: 'Expanded'
+            },
+            formal: {
+                instruction: 'Rewrite this text in a formal, professional tone. Use proper grammar, avoid contractions, and maintain a polished, business-appropriate style.',
+                statusText: 'Made formal'
+            },
+            casual: {
+                instruction: 'Rewrite this text in a casual, friendly tone. Use natural conversational language, contractions are fine, keep it warm and approachable.',
+                statusText: 'Made casual'
+            },
+            bullets: {
+                instruction: 'Convert this text into a clear bullet-point list. Extract the key points, ideas, or items and present each as a separate bullet. Start each bullet with "• ".',
+                statusText: 'Converted to bullets'
+            },
+            email: {
+                instruction: 'Format this as a professional email. Include an appropriate greeting, organize the content into clear paragraphs, and add a suitable sign-off. Keep it concise and actionable.',
+                statusText: 'Formatted as email'
+            }
+        };
+
+        // Apply predefined style transformation
+        async function applyStyle(styleName) {
+            const styleConfig = STYLE_PROMPTS[styleName];
+            if (!styleConfig) {
+                showStatus('Unknown style', true);
+                return;
+            }
+
+            const textToTransform = editor.value.trim();
+            if (!textToTransform) {
+                showStatus('No text to transform', true);
+                return;
+            }
+
+            // Disable buttons during processing
+            condenseBtn.classList.add('loading');
+            condenseBtn.disabled = true;
+            touchUpBtn.disabled = true;
+            clearBtn.disabled = true;
+            editorWrapper.classList.add('processing');
+            editor.classList.add('processing');
+
+            try {
+                if (useLocalModel && localPipeline && modelReady) {
+                    // Local model processing
+                    showStatus(`Applying ${styleName}...`);
+
+                    const prompt = `You are a text editor. Follow the instruction exactly.
+
+Instruction: ${styleConfig.instruction}
+
+Text to transform:
+${textToTransform}
+
+Transformed text:`;
+
+                    const result = await localPipeline(prompt, {
+                        max_new_tokens: 800,
+                        temperature: 0.3,
+                        do_sample: true,
+                        top_p: 0.9,
+                    });
+
+                    let generatedText = result[0].generated_text;
+                    // Extract only the result part
+                    const resultIndex = generatedText.lastIndexOf('Transformed text:\n');
+                    if (resultIndex !== -1) {
+                        generatedText = generatedText.substring(resultIndex + 18).trim();
+                    }
+                    // Clean up any trailing artifacts
+                    generatedText = generatedText.split('\n\nText to transform:')[0].trim();
+                    generatedText = generatedText.split('\n\nInstruction:')[0].trim();
+
+                    const cleanedResponse = generatedText.replace(/—/g, ', ');
+                    editor.value = cleanedResponse;
+                    showStatus(`${styleConfig.statusText} (Local)`);
+
+                    try {
+                        await navigator.clipboard.writeText(cleanedResponse);
+                    } catch (e) {}
+
+                } else {
+                    // API processing
+                    if (!apiToken) {
+                        showStatus('Please set your API token in settings', true);
+                        settingsModal.classList.add('show');
+                        return;
+                    }
+
+                    showStatus(`Applying ${styleName}...`);
+
+                    const response = await fetch('https://api.anthropic.com/v1/messages', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'x-api-key': apiToken,
+                            'anthropic-version': '2023-06-01',
+                            'anthropic-dangerous-direct-browser-access': 'true'
+                        },
+                        body: JSON.stringify({
+                            model: 'claude-haiku-4-5-20251001',
+                            max_tokens: 2000,
+                            system: `You are a text transformation assistant. Apply the requested style transformation precisely. Output only the transformed text in JSON format: {"response": "transformed text here"}. Do not include explanations or markdown.`,
+                            messages: [
+                                {
+                                    role: 'user',
+                                    content: `${styleConfig.instruction}\n\nText to transform:\n${textToTransform}`
+                                }
+                            ]
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.error?.message || 'API request failed');
+                    }
+
+                    const data = await response.json();
+                    let responseText = data.content[0].text;
+                    responseText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+
+                    const result = JSON.parse(responseText);
+                    const cleanedResponse = result.response.replace(/—/g, ', ');
+                    editor.value = cleanedResponse;
+
+                    showStatus(styleConfig.statusText);
+
+                    try {
+                        await navigator.clipboard.writeText(cleanedResponse);
+                    } catch (e) {}
+                }
+
+            } catch (err) {
+                console.error('Style transformation error:', err);
+                showStatus(`Failed to apply ${styleName}: ` + err.message, true);
+            } finally {
+                condenseBtn.classList.remove('loading');
+                condenseBtn.disabled = false;
+                touchUpBtn.disabled = false;
+                clearBtn.disabled = false;
+                editorWrapper.classList.remove('processing');
+                editor.classList.remove('processing');
+            }
+        }
+
         // Custom Edit function
         async function customEdit(instruction) {
             if (!instruction || !instruction.trim()) {
@@ -2514,13 +2783,34 @@ result:
         }
 
         pasteBtn.addEventListener('click', pasteFromClipboard);
+
+        // Pre-warm microphone on touchstart for faster recording start
+        micBtn.addEventListener('touchstart', () => {
+            if (!isRecording && !pendingStream) {
+                pendingStream = navigator.mediaDevices.getUserMedia({ audio: true });
+                // Don't await - let it resolve in background
+                // Clean up if user doesn't actually tap (e.g., scrolls away)
+                setTimeout(() => {
+                    if (pendingStream) {
+                        pendingStream.then(stream => {
+                            // If stream wasn't used within 2 seconds, release it
+                            if (pendingStream) {
+                                stream.getTracks().forEach(track => track.stop());
+                                pendingStream = null;
+                            }
+                        }).catch(() => {
+                            pendingStream = null;
+                        });
+                    }
+                }, 2000);
+            }
+        }, { passive: true });
+
         micBtn.addEventListener('click', toggleRecording);
         touchUpBtn.addEventListener('click', touchUp);
         condenseBtn.addEventListener('click', condense);
         clearBtn.addEventListener('click', () => {
-            if (confirm('Clear the editor?')) {
-                hideEditor();
-            }
+            hideEditor();
         });
 
         // Custom edit voice recording state (declared here for use in closeActionSheet)
@@ -2580,6 +2870,9 @@ result:
                 condense();
             } else if (action === 'custom') {
                 showCustomInput();
+            } else if (['expand', 'formal', 'casual', 'bullets', 'email'].includes(action)) {
+                closeActionSheet();
+                applyStyle(action);
             }
         });
 
@@ -2614,6 +2907,14 @@ result:
                 }
                 isCustomRecording = false;
             } else {
+                // Check if voice transcription is configured
+                if (!useLocalTranscription && !elevenLabsKey) {
+                    closeActionSheet();
+                    showStatus('Please add ElevenLabs API key in settings', true);
+                    settingsModal.classList.add('show');
+                    return;
+                }
+
                 // Start recording
                 try {
                     customAudioChunks = [];
@@ -2640,14 +2941,22 @@ result:
                         showStatus('Processing...');
 
                         const audioBlob = new Blob(customAudioChunks, { type: 'audio/webm' });
-                        const audioUrl = URL.createObjectURL(audioBlob);
 
                         try {
-                            // Transcribe
-                            const whisper = await window.getWhisperPipeline();
-                            const output = await whisper(audioUrl);
-                            const text = Array.isArray(output) ? output[0].text : output.text;
-                            URL.revokeObjectURL(audioUrl);
+                            // Transcribe using selected method
+                            let text;
+
+                            if (useLocalTranscription) {
+                                // Local Whisper transcription
+                                const audioUrl = URL.createObjectURL(audioBlob);
+                                const whisper = await window.getWhisperPipeline();
+                                const output = await whisper(audioUrl);
+                                text = Array.isArray(output) ? output[0].text : output.text;
+                                URL.revokeObjectURL(audioUrl);
+                            } else {
+                                // ElevenLabs API transcription (default)
+                                text = await transcribeWithElevenLabs(audioBlob);
+                            }
 
                             if (text && text.trim().length > 1) {
                                 // Apply the custom edit
@@ -2664,7 +2973,7 @@ result:
                             }
                         } catch (err) {
                             console.error('Error:', err);
-                            showStatus('Failed. Please try again.', true);
+                            showStatus('Transcription failed: ' + err.message, true);
                             // Reset UI state
                             condenseBtn.classList.remove('loading');
                             condenseBtn.disabled = false;
@@ -2712,6 +3021,20 @@ result:
         apiTokenInput.addEventListener('input', (e) => {
             apiToken = e.target.value.trim();
             localStorage.setItem('apiToken', apiToken);
+        });
+
+        // ElevenLabs API Key input
+        elevenLabsKeyInput.addEventListener('input', (e) => {
+            elevenLabsKey = e.target.value.trim();
+            localStorage.setItem('elevenLabsKey', elevenLabsKey);
+        });
+
+        // Local transcription toggle
+        useLocalTranscriptionToggle.addEventListener('click', () => {
+            useLocalTranscription = !useLocalTranscription;
+            useLocalTranscriptionToggle.classList.toggle('active', useLocalTranscription);
+            localStorage.setItem('useLocalTranscription', useLocalTranscription);
+            console.log('Local transcription:', useLocalTranscription ? 'ENABLED (Whisper)' : 'DISABLED (ElevenLabs)');
         });
 
         // Force language toggle
