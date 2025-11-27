@@ -689,16 +689,6 @@
             color: #ff3b30;
         }
 
-        .custom-input-panel .mic-btn.transcribing {
-            background: rgba(33, 150, 243, 0.2);
-            border-color: rgba(33, 150, 243, 0.4);
-            animation: pulse-transcribing 1.2s ease-in-out infinite;
-        }
-
-        .custom-input-panel .mic-btn.transcribing svg {
-            color: #2196F3;
-        }
-
         .custom-input-panel .mic-btn svg {
             width: 20px;
             height: 20px;
@@ -2544,8 +2534,8 @@ result:
         function closeActionSheet() {
             actionSheetOverlay.classList.remove('show');
             customEditInput.value = '';
-            // Clean up any recording/transcribing states
-            customMicBtn.classList.remove('recording', 'transcribing');
+            // Clean up any recording state
+            customMicBtn.classList.remove('recording');
             if (isCustomRecording && customMediaRecorder && customMediaRecorder.state === 'recording') {
                 customMediaRecorder.stop();
                 customMediaRecorder.stream.getTracks().forEach(track => track.stop());
@@ -2632,32 +2622,52 @@ result:
 
                     customMediaRecorder.onstop = async () => {
                         customMicBtn.classList.remove('recording');
-                        customMicBtn.classList.add('transcribing');
-                        showStatus('Transcribing...');
+
+                        // Immediately close action sheet and show processing on main UI
+                        closeActionSheet();
+
+                        // Show loading state on main UI
+                        condenseBtn.classList.add('loading');
+                        condenseBtn.disabled = true;
+                        touchUpBtn.disabled = true;
+                        clearBtn.disabled = true;
+                        editorWrapper.classList.add('processing');
+                        editor.classList.add('processing');
+                        showStatus('Processing...');
 
                         const audioBlob = new Blob(customAudioChunks, { type: 'audio/webm' });
                         const audioUrl = URL.createObjectURL(audioBlob);
 
                         try {
+                            // Transcribe
                             const whisper = await window.getWhisperPipeline();
                             const output = await whisper(audioUrl);
                             const text = Array.isArray(output) ? output[0].text : output.text;
-
                             URL.revokeObjectURL(audioUrl);
-                            customMicBtn.classList.remove('transcribing');
 
                             if (text && text.trim().length > 1) {
-                                // Put transcribed text in input and auto-apply
-                                customEditInput.value = text.trim();
-                                closeActionSheet();
-                                customEdit(text.trim());
+                                // Apply the custom edit
+                                await customEdit(text.trim());
                             } else {
                                 showStatus('Could not transcribe. Try again.', true);
+                                // Reset UI state
+                                condenseBtn.classList.remove('loading');
+                                condenseBtn.disabled = false;
+                                touchUpBtn.disabled = false;
+                                clearBtn.disabled = false;
+                                editorWrapper.classList.remove('processing');
+                                editor.classList.remove('processing');
                             }
                         } catch (err) {
-                            console.error('Transcription error:', err);
-                            customMicBtn.classList.remove('transcribing');
-                            showStatus('Transcription failed', true);
+                            console.error('Error:', err);
+                            showStatus('Failed. Please try again.', true);
+                            // Reset UI state
+                            condenseBtn.classList.remove('loading');
+                            condenseBtn.disabled = false;
+                            touchUpBtn.disabled = false;
+                            clearBtn.disabled = false;
+                            editorWrapper.classList.remove('processing');
+                            editor.classList.remove('processing');
                         }
                     };
 
