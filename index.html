@@ -685,9 +685,24 @@
             animation: pulse-recording 1.5s ease-in-out infinite;
         }
 
+        .custom-input-panel .mic-btn.recording svg {
+            color: #ff3b30;
+        }
+
+        .custom-input-panel .mic-btn.transcribing {
+            background: rgba(33, 150, 243, 0.2);
+            border-color: rgba(33, 150, 243, 0.4);
+            animation: pulse-transcribing 1.2s ease-in-out infinite;
+        }
+
+        .custom-input-panel .mic-btn.transcribing svg {
+            color: #2196F3;
+        }
+
         .custom-input-panel .mic-btn svg {
             width: 20px;
             height: 20px;
+            transition: color 0.3s;
         }
 
         .custom-input-panel .apply-btn {
@@ -2514,6 +2529,11 @@ result:
             }
         });
 
+        // Custom edit voice recording state (declared here for use in closeActionSheet)
+        let customMediaRecorder = null;
+        let customAudioChunks = [];
+        let isCustomRecording = false;
+
         // Action Sheet functions
         function openActionSheet() {
             actionSheetOverlay.classList.add('show');
@@ -2524,12 +2544,22 @@ result:
         function closeActionSheet() {
             actionSheetOverlay.classList.remove('show');
             customEditInput.value = '';
+            // Clean up any recording/transcribing states
+            customMicBtn.classList.remove('recording', 'transcribing');
+            if (isCustomRecording && customMediaRecorder && customMediaRecorder.state === 'recording') {
+                customMediaRecorder.stop();
+                customMediaRecorder.stream.getTracks().forEach(track => track.stop());
+                isCustomRecording = false;
+            }
         }
 
         function showCustomInput() {
             actionSheetOptions.style.display = 'none';
             customInputPanel.classList.add('show');
-            customEditInput.focus();
+            // Delay focus for iOS keyboard to appear after animation
+            setTimeout(() => {
+                customEditInput.focus();
+            }, 100);
         }
 
         // Dropdown toggle opens action sheet
@@ -2560,7 +2590,7 @@ result:
         });
 
         // Custom edit apply
-        customApplyBtn.addEventListener('click', () => {
+        function applyCustomEdit() {
             const instruction = customEditInput.value.trim();
             if (instruction) {
                 closeActionSheet();
@@ -2568,12 +2598,17 @@ result:
             } else {
                 showStatus('Please enter an edit instruction', true);
             }
-        });
+        }
 
-        // Custom edit voice recording state
-        let customMediaRecorder = null;
-        let customAudioChunks = [];
-        let isCustomRecording = false;
+        customApplyBtn.addEventListener('click', applyCustomEdit);
+
+        // Allow Enter key to submit custom edit
+        customEditInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                applyCustomEdit();
+            }
+        });
 
         // Custom mic button for voice input
         customMicBtn.addEventListener('click', async () => {
@@ -2597,6 +2632,7 @@ result:
 
                     customMediaRecorder.onstop = async () => {
                         customMicBtn.classList.remove('recording');
+                        customMicBtn.classList.add('transcribing');
                         showStatus('Transcribing...');
 
                         const audioBlob = new Blob(customAudioChunks, { type: 'audio/webm' });
@@ -2608,6 +2644,7 @@ result:
                             const text = Array.isArray(output) ? output[0].text : output.text;
 
                             URL.revokeObjectURL(audioUrl);
+                            customMicBtn.classList.remove('transcribing');
 
                             if (text && text.trim().length > 1) {
                                 // Put transcribed text in input and auto-apply
@@ -2619,6 +2656,7 @@ result:
                             }
                         } catch (err) {
                             console.error('Transcription error:', err);
+                            customMicBtn.classList.remove('transcribing');
                             showStatus('Transcription failed', true);
                         }
                     };
