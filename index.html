@@ -473,6 +473,240 @@
             to { transform: rotate(360deg); }
         }
 
+        /* Dropdown button */
+        .dropdown-btn {
+            position: relative;
+            display: flex;
+            flex: 0.5;
+        }
+
+        .dropdown-btn .action-btn {
+            flex: 1;
+            border-radius: 16px 0 0 16px;
+            border-right: none;
+        }
+
+        .dropdown-btn .dropdown-toggle {
+            width: 44px;
+            padding: 18px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-left: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 0 16px 16px 0;
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .dropdown-btn .dropdown-toggle:active {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .dropdown-btn .dropdown-toggle svg {
+            width: 14px;
+            height: 14px;
+            transition: transform 0.3s;
+        }
+
+        .dropdown-btn.open .dropdown-toggle svg {
+            transform: rotate(180deg);
+        }
+
+        /* Action sheet (iOS style) */
+        .action-sheet-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+            z-index: 1000;
+        }
+
+        .action-sheet-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .action-sheet {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 8px;
+            padding-bottom: calc(8px + env(safe-area-inset-bottom));
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1001;
+        }
+
+        .action-sheet-overlay.show .action-sheet {
+            transform: translateY(0);
+        }
+
+        .action-sheet-group {
+            background: rgba(30, 30, 30, 0.95);
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 8px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        .action-sheet-item {
+            padding: 18px 20px;
+            color: #fff;
+            font-size: 17px;
+            font-weight: 500;
+            text-align: center;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .action-sheet-item:last-child {
+            border-bottom: none;
+        }
+
+        .action-sheet-item:active {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .action-sheet-item.selected {
+            color: #2196F3;
+        }
+
+        .action-sheet-item .icon {
+            width: 20px;
+            height: 20px;
+            opacity: 0.8;
+        }
+
+        .action-sheet-item.has-sub::after {
+            content: '›';
+            margin-left: auto;
+            opacity: 0.5;
+            font-size: 20px;
+        }
+
+        .action-sheet-cancel {
+            background: rgba(45, 45, 45, 0.95);
+            border-radius: 16px;
+            padding: 18px 20px;
+            color: #fff;
+            font-size: 17px;
+            font-weight: 600;
+            text-align: center;
+            cursor: pointer;
+            transition: background 0.2s;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        .action-sheet-cancel:active {
+            background: rgba(60, 60, 60, 0.95);
+        }
+
+        /* Custom input panel (within action sheet) */
+        .custom-input-panel {
+            display: none;
+            padding: 20px;
+            gap: 16px;
+            flex-direction: column;
+        }
+
+        .custom-input-panel.show {
+            display: flex;
+        }
+
+        .custom-input-panel .input-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .custom-input-panel input {
+            flex: 1;
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 16px;
+            font-family: inherit;
+            outline: none;
+        }
+
+        .custom-input-panel input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .custom-input-panel input:focus {
+            border-color: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .custom-input-panel .mic-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .custom-input-panel .mic-btn:active {
+            transform: scale(0.95);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .custom-input-panel .mic-btn.recording {
+            background: rgba(255, 59, 48, 0.2);
+            border-color: rgba(255, 59, 48, 0.4);
+            animation: pulse-recording 1.5s ease-in-out infinite;
+        }
+
+        .custom-input-panel .mic-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .custom-input-panel .apply-btn {
+            padding: 14px 24px;
+            background: #fff;
+            border: none;
+            border-radius: 12px;
+            color: #000;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .custom-input-panel .apply-btn:active {
+            transform: scale(0.98);
+            opacity: 0.9;
+        }
+
         .status {
             position: fixed;
             top: calc(30px + env(safe-area-inset-top));
@@ -871,9 +1105,16 @@
             <button class="action-btn secondary" id="clearBtn" style="display: none;">
                 Clear
             </button>
-            <button class="action-btn secondary" id="condenseBtn" style="display: none;">
-                Condense
-            </button>
+            <div class="dropdown-btn" id="condenseDropdown" style="display: none;">
+                <button class="action-btn secondary" id="condenseBtn">
+                    Condense
+                </button>
+                <button class="dropdown-toggle" id="condenseToggle">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </button>
+            </div>
             <button class="action-btn" id="touchUpBtn" style="display: none;">
                 <span id="touchUpBtnText">Touch Up</span>
             </button>
@@ -882,7 +1123,46 @@
 
     <div class="status" id="status"></div>
 
-    <div class="version">v1.7.0</div>
+    <!-- Action Sheet for Condense/Custom -->
+    <div class="action-sheet-overlay" id="actionSheetOverlay">
+        <div class="action-sheet">
+            <div class="action-sheet-group">
+                <!-- Main options -->
+                <div class="action-sheet-options" id="actionSheetOptions">
+                    <div class="action-sheet-item" data-action="condense">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 12h16M4 6h16M4 18h10"></path>
+                        </svg>
+                        Condense
+                    </div>
+                    <div class="action-sheet-item has-sub" data-action="custom">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                        </svg>
+                        Custom Edit
+                    </div>
+                </div>
+                <!-- Custom input panel (hidden by default) -->
+                <div class="custom-input-panel" id="customInputPanel">
+                    <div class="input-row">
+                        <input type="text" id="customEditInput" placeholder="e.g. Make it more formal...">
+                        <button class="mic-btn" id="customMicBtn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                                <line x1="12" y1="19" x2="12" y2="23"></line>
+                                <line x1="8" y1="23" x2="16" y2="23"></line>
+                            </svg>
+                        </button>
+                    </div>
+                    <button class="apply-btn" id="customApplyBtn">Apply</button>
+                </div>
+            </div>
+            <div class="action-sheet-cancel" id="actionSheetCancel">Cancel</div>
+        </div>
+    </div>
+
+    <div class="version">v1.8.0</div>
 
     <div class="settings-modal" id="settingsModal">
         <div class="settings-content">
@@ -1013,6 +1293,15 @@
         const touchUpBtnText = document.getElementById('touchUpBtnText');
         const clearBtn = document.getElementById('clearBtn');
         const condenseBtn = document.getElementById('condenseBtn');
+        const condenseDropdown = document.getElementById('condenseDropdown');
+        const condenseToggle = document.getElementById('condenseToggle');
+        const actionSheetOverlay = document.getElementById('actionSheetOverlay');
+        const actionSheetOptions = document.getElementById('actionSheetOptions');
+        const actionSheetCancel = document.getElementById('actionSheetCancel');
+        const customInputPanel = document.getElementById('customInputPanel');
+        const customEditInput = document.getElementById('customEditInput');
+        const customMicBtn = document.getElementById('customMicBtn');
+        const customApplyBtn = document.getElementById('customApplyBtn');
         const status = document.getElementById('status');
         const settingsBtn = document.getElementById('settingsBtn');
         const settingsModal = document.getElementById('settingsModal');
@@ -1058,6 +1347,7 @@
         let systemPrompt = '';
         let localPrompt = '';  // Few-shot prompt for local models
         let localCondensePrompt = '';  // Few-shot prompt for condense
+        let customEditPrompt = '';  // Few-shot prompt for custom edits
         let conversationHistory = [];
         let useLocalModel = false;
         let selectedModel = 'onnx-community/Qwen2.5-0.5B-Instruct';
@@ -1156,6 +1446,21 @@
             }
         }
 
+        // Load few-shot prompt for custom edits
+        async function loadCustomEditPrompt() {
+            try {
+                const response = await fetch('./custom-edit-prompt.md');
+                if (response.ok) {
+                    customEditPrompt = await response.text();
+                    console.log('Custom edit prompt loaded, length:', customEditPrompt.length);
+                } else {
+                    console.warn('Could not load custom-edit-prompt.md');
+                }
+            } catch (err) {
+                console.warn('Error loading custom edit prompt:', err);
+            }
+        }
+
         // Update model indicator display
         function updateModelIndicator() {
             if (useLocalModel) {
@@ -1180,6 +1485,7 @@
         loadSystemPrompt();
         loadLocalPrompt();
         loadLocalCondensePrompt();
+        loadCustomEditPrompt();
 
         // Initialize model indicator
         updateModelIndicator();
@@ -1572,7 +1878,7 @@ condensed result:`;
             editorWrapper.classList.remove('active');
             touchUpBtn.style.display = 'none';
             clearBtn.style.display = 'none';
-            condenseBtn.style.display = 'none';
+            condenseDropdown.style.display = 'none';
             editor.value = '';
             originalText = '';
             hasProcessed = false;
@@ -1752,7 +2058,7 @@ condensed result:`;
                         if (!hasProcessed) {
                             hasProcessed = true;
                             touchUpBtnText.textContent = 'Try Again';
-                            condenseBtn.style.display = 'flex';
+                            condenseDropdown.style.display = 'flex';
                         }
 
                         showStatus('✓ Touched up (Local)');
@@ -1897,7 +2203,7 @@ ${textToProcess}`;
                 if (!hasProcessed) {
                     hasProcessed = true;
                     touchUpBtnText.textContent = 'Try Again';
-                    condenseBtn.style.display = 'flex';
+                    condenseDropdown.style.display = 'flex';
                 }
 
                 showStatus('Touched up');
@@ -2078,6 +2384,126 @@ ${textToProcess}`;
             }
         }
 
+        // Custom Edit function
+        async function customEdit(instruction) {
+            if (!instruction || !instruction.trim()) {
+                showStatus('Please provide an edit instruction', true);
+                return;
+            }
+
+            const textToEdit = editor.value.trim();
+            if (!textToEdit) {
+                showStatus('No text to edit', true);
+                return;
+            }
+
+            // Disable buttons during processing
+            condenseBtn.classList.add('loading');
+            condenseBtn.disabled = true;
+            touchUpBtn.disabled = true;
+            clearBtn.disabled = true;
+            editorWrapper.classList.add('processing');
+            editor.classList.add('processing');
+
+            try {
+                if (useLocalModel && localPipeline && modelReady) {
+                    // Local model processing
+                    showStatus('Applying edit (Local)...');
+
+                    const prompt = `${customEditPrompt}
+user text:
+${textToEdit}
+
+edit instruction:
+${instruction}
+
+result:
+`;
+                    const result = await localPipeline(prompt, {
+                        max_new_tokens: 500,
+                        temperature: 0.3,
+                        do_sample: true,
+                        top_p: 0.9,
+                    });
+
+                    let generatedText = result[0].generated_text;
+                    // Extract only the result part
+                    const resultIndex = generatedText.lastIndexOf('result:\n');
+                    if (resultIndex !== -1) {
+                        generatedText = generatedText.substring(resultIndex + 8).trim();
+                    }
+                    // Clean up any trailing artifacts
+                    generatedText = generatedText.split('\n\nuser text:')[0].trim();
+
+                    editor.value = generatedText;
+                    showStatus('✓ Edit applied (Local)');
+
+                } else {
+                    // API processing
+                    if (!apiToken) {
+                        showStatus('API token required. Please add in Settings.', true);
+                        return;
+                    }
+
+                    showStatus('Applying edit...');
+
+                    const response = await fetch('https://api.anthropic.com/v1/messages', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'x-api-key': apiToken,
+                            'anthropic-version': '2023-06-01',
+                            'anthropic-dangerous-direct-browser-access': 'true'
+                        },
+                        body: JSON.stringify({
+                            model: 'claude-haiku-4-5-20251001',
+                            max_tokens: 1024,
+                            system: `You are a text editor. Apply the user's edit instruction to the provided text. Keep the core meaning intact. Output only the edited text in JSON format: {"response": "edited text here"}`,
+                            messages: [
+                                {
+                                    role: 'user',
+                                    content: `Text to edit:\n${textToEdit}\n\nEdit instruction: ${instruction}`
+                                }
+                            ]
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.error?.message || 'API request failed');
+                    }
+
+                    const data = await response.json();
+                    let responseText = data.content[0].text;
+                    responseText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+
+                    const result = JSON.parse(responseText);
+                    const cleanedResponse = result.response.replace(/—/g, ', ');
+                    editor.value = cleanedResponse;
+
+                    showStatus('✓ Edit applied');
+                }
+
+                // Copy to clipboard
+                try {
+                    await navigator.clipboard.writeText(editor.value);
+                } catch (e) {
+                    // Clipboard write failed
+                }
+
+            } catch (err) {
+                console.error('Custom edit error:', err);
+                showStatus('Failed to apply edit: ' + err.message, true);
+            } finally {
+                condenseBtn.classList.remove('loading');
+                condenseBtn.disabled = false;
+                touchUpBtn.disabled = false;
+                clearBtn.disabled = false;
+                editorWrapper.classList.remove('processing');
+                editor.classList.remove('processing');
+            }
+        }
+
         pasteBtn.addEventListener('click', pasteFromClipboard);
         micBtn.addEventListener('click', toggleRecording);
         touchUpBtn.addEventListener('click', touchUp);
@@ -2085,6 +2511,127 @@ ${textToProcess}`;
         clearBtn.addEventListener('click', () => {
             if (confirm('Clear the editor?')) {
                 hideEditor();
+            }
+        });
+
+        // Action Sheet functions
+        function openActionSheet() {
+            actionSheetOverlay.classList.add('show');
+            actionSheetOptions.style.display = 'block';
+            customInputPanel.classList.remove('show');
+        }
+
+        function closeActionSheet() {
+            actionSheetOverlay.classList.remove('show');
+            customEditInput.value = '';
+        }
+
+        function showCustomInput() {
+            actionSheetOptions.style.display = 'none';
+            customInputPanel.classList.add('show');
+            customEditInput.focus();
+        }
+
+        // Dropdown toggle opens action sheet
+        condenseToggle.addEventListener('click', openActionSheet);
+
+        // Action sheet overlay click to close
+        actionSheetOverlay.addEventListener('click', (e) => {
+            if (e.target === actionSheetOverlay) {
+                closeActionSheet();
+            }
+        });
+
+        // Cancel button
+        actionSheetCancel.addEventListener('click', closeActionSheet);
+
+        // Action sheet items
+        actionSheetOptions.addEventListener('click', (e) => {
+            const item = e.target.closest('.action-sheet-item');
+            if (!item) return;
+
+            const action = item.dataset.action;
+            if (action === 'condense') {
+                closeActionSheet();
+                condense();
+            } else if (action === 'custom') {
+                showCustomInput();
+            }
+        });
+
+        // Custom edit apply
+        customApplyBtn.addEventListener('click', () => {
+            const instruction = customEditInput.value.trim();
+            if (instruction) {
+                closeActionSheet();
+                customEdit(instruction);
+            } else {
+                showStatus('Please enter an edit instruction', true);
+            }
+        });
+
+        // Custom edit voice recording state
+        let customMediaRecorder = null;
+        let customAudioChunks = [];
+        let isCustomRecording = false;
+
+        // Custom mic button for voice input
+        customMicBtn.addEventListener('click', async () => {
+            if (isCustomRecording) {
+                // Stop recording
+                if (customMediaRecorder && customMediaRecorder.state === 'recording') {
+                    customMediaRecorder.stop();
+                    customMediaRecorder.stream.getTracks().forEach(track => track.stop());
+                }
+                isCustomRecording = false;
+            } else {
+                // Start recording
+                try {
+                    customAudioChunks = [];
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    customMediaRecorder = new MediaRecorder(stream);
+
+                    customMediaRecorder.ondataavailable = (event) => {
+                        customAudioChunks.push(event.data);
+                    };
+
+                    customMediaRecorder.onstop = async () => {
+                        customMicBtn.classList.remove('recording');
+                        showStatus('Transcribing...');
+
+                        const audioBlob = new Blob(customAudioChunks, { type: 'audio/webm' });
+                        const audioUrl = URL.createObjectURL(audioBlob);
+
+                        try {
+                            const whisper = await window.getWhisperPipeline();
+                            const output = await whisper(audioUrl);
+                            const text = Array.isArray(output) ? output[0].text : output.text;
+
+                            URL.revokeObjectURL(audioUrl);
+
+                            if (text && text.trim().length > 1) {
+                                // Put transcribed text in input and auto-apply
+                                customEditInput.value = text.trim();
+                                closeActionSheet();
+                                customEdit(text.trim());
+                            } else {
+                                showStatus('Could not transcribe. Try again.', true);
+                            }
+                        } catch (err) {
+                            console.error('Transcription error:', err);
+                            showStatus('Transcription failed', true);
+                        }
+                    };
+
+                    customMediaRecorder.start();
+                    isCustomRecording = true;
+                    customMicBtn.classList.add('recording');
+                    showStatus('Recording... Tap to stop');
+
+                } catch (err) {
+                    console.error('Failed to start recording:', err);
+                    showStatus('Microphone access denied', true);
+                }
             }
         });
 
