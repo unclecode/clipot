@@ -1939,7 +1939,11 @@ condensed result:`;
                         // Get or initialize Whisper pipeline (lazy load on first use)
                         const whisper = await window.getWhisperPipeline();
 
-                        const output = await whisper(audioUrl);
+                        // Use chunking for longer audio (30s chunks with 5s overlap)
+                        const output = await whisper(audioUrl, {
+                            chunk_length_s: 30,
+                            stride_length_s: 5
+                        });
                         const text = Array.isArray(output) ? output[0].text : output.text;
 
                         // Clean up audio URL
