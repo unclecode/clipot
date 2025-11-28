@@ -186,6 +186,140 @@
             max-width: 200px;
         }
 
+        /* Image attachment zone (image mode) */
+        .image-attach-zone {
+            display: none;
+            width: 100%;
+            max-width: 320px;
+            margin-top: 24px;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .editor-container.has-attachments {
+            justify-content: flex-start;
+            padding-top: 40px;
+        }
+
+        .attach-dropzone {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 24px 16px;
+            border: 2px dashed rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .attach-dropzone:hover,
+        .attach-dropzone:active {
+            border-color: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .attach-dropzone svg {
+            width: 32px;
+            height: 32px;
+            color: rgba(255, 255, 255, 0.4);
+            transition: color 0.3s;
+        }
+
+        .attach-dropzone:hover svg {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .attach-dropzone span {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.4);
+            font-weight: 500;
+        }
+
+        .attach-dropzone.has-images {
+            padding: 12px 16px;
+        }
+
+        .attach-dropzone.has-images span {
+            font-size: 12px;
+        }
+
+        .attached-images-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            width: 100%;
+        }
+
+        .attached-image-item {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 12px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.05);
+            animation: fadeInScale 0.25s ease-out;
+        }
+
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .attached-image-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .attached-image-item .remove-btn {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.7);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s, transform 0.2s;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        .attached-image-item:hover .remove-btn,
+        .attached-image-item .remove-btn:focus {
+            opacity: 1;
+        }
+
+        /* Always show on touch devices */
+        @media (hover: none) {
+            .attached-image-item .remove-btn {
+                opacity: 1;
+            }
+        }
+
+        .attached-image-item .remove-btn:active {
+            transform: scale(0.9);
+        }
+
+        .attached-image-item .remove-btn svg {
+            width: 12px;
+            height: 12px;
+            color: #fff;
+        }
+
         .input-icons {
             display: flex;
             gap: 24px;
@@ -1363,6 +1497,19 @@
                         <div class="transcribe-chars"><div class="transcribe-chars-inner">@<br>#<br>$<br>%<br>&amp;<br>*<br>A<br>H<br>Z<br>2<br>4<br>7<br>?<br>!</br>^<br>@</div></div>
                     </div>
                 </div>
+                <!-- Image attachment zone (image mode only) -->
+                <div class="image-attach-zone" id="imageAttachZone">
+                    <div class="attach-dropzone" id="attachDropzone">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                            <polyline points="21 15 16 10 5 21"></polyline>
+                        </svg>
+                        <span>Tap to add images</span>
+                    </div>
+                    <input type="file" id="imageFileInput" accept="image/*" multiple hidden>
+                    <div class="attached-images-grid" id="attachedImagesGrid"></div>
+                </div>
                 <div class="paste-text">Polish your thoughts</div>
             </div>
 
@@ -1511,7 +1658,7 @@
         </div>
     </div>
 
-    <div class="version">v2.0.1</div>
+    <div class="version">v2.1.0</div>
 
     <!-- Fullscreen Image Preview -->
     <div class="fullscreen-overlay" id="fullscreenOverlay">
@@ -1732,6 +1879,11 @@
         const geminiKeyInput = document.getElementById('geminiKeyInput');
         const aspectRatioSelect = document.getElementById('aspectRatioSelect');
         const pasteText = document.querySelector('.paste-text');
+        const editorContainer = document.querySelector('.editor-container');
+        const imageAttachZone = document.getElementById('imageAttachZone');
+        const attachDropzone = document.getElementById('attachDropzone');
+        const imageFileInput = document.getElementById('imageFileInput');
+        const attachedImagesGrid = document.getElementById('attachedImagesGrid');
 
         let originalText = '';
         let autoProcess = true;
@@ -1776,6 +1928,7 @@
         let generatedImageData = null;  // { mimeType, data (base64) }
         let currentImagePrompt = '';
         let selectedImageStyle = 'none';
+        let attachedImages = [];  // Array of { file, dataUrl } for image attachments
 
         // Image style presets (extended set - 12 styles)
         const IMAGE_STYLE_PRESETS = {
@@ -1997,6 +2150,14 @@
             // Update tagline
             pasteText.textContent = mode === 'image' ? 'Imagine with words' : 'Polish your thoughts';
 
+            // Show/hide image attachment zone
+            imageAttachZone.style.display = mode === 'image' ? 'flex' : 'none';
+
+            // Clear attachments when switching away from image mode
+            if (mode !== 'image') {
+                clearAttachedImages();
+            }
+
             // Update model indicator
             updateModelIndicator();
 
@@ -2008,6 +2169,96 @@
             // Reset state when switching modes
             hideEditor();
         }
+
+        // Image attachment functions
+        function clearAttachedImages() {
+            attachedImages = [];
+            attachedImagesGrid.innerHTML = '';
+            editorContainer.classList.remove('has-attachments');
+            attachDropzone.classList.remove('has-images');
+            attachDropzone.querySelector('span').textContent = 'Tap to add images';
+        }
+
+        function updateAttachmentUI() {
+            const hasImages = attachedImages.length > 0;
+            editorContainer.classList.toggle('has-attachments', hasImages);
+            attachDropzone.classList.toggle('has-images', hasImages);
+            attachDropzone.querySelector('span').textContent = hasImages
+                ? `+ Add more (${attachedImages.length}/14)`
+                : 'Tap to add images';
+        }
+
+        function renderAttachedImages() {
+            attachedImagesGrid.innerHTML = '';
+            attachedImages.forEach((img, index) => {
+                const item = document.createElement('div');
+                item.className = 'attached-image-item';
+                item.innerHTML = `
+                    <img src="${img.dataUrl}" alt="Attached image ${index + 1}">
+                    <button class="remove-btn" data-index="${index}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                `;
+                attachedImagesGrid.appendChild(item);
+            });
+            updateAttachmentUI();
+        }
+
+        function removeAttachedImage(index) {
+            attachedImages.splice(index, 1);
+            renderAttachedImages();
+        }
+
+        function handleImageFiles(files) {
+            const maxImages = 14;
+            const remaining = maxImages - attachedImages.length;
+
+            if (remaining <= 0) {
+                showStatus('Maximum 14 images allowed', true);
+                return;
+            }
+
+            const filesToAdd = Array.from(files).slice(0, remaining);
+
+            filesToAdd.forEach(file => {
+                if (!file.type.startsWith('image/')) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    attachedImages.push({
+                        file: file,
+                        dataUrl: e.target.result,
+                        mimeType: file.type
+                    });
+                    renderAttachedImages();
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Attachment zone event listeners
+        attachDropzone.addEventListener('click', () => {
+            imageFileInput.click();
+        });
+
+        imageFileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleImageFiles(e.target.files);
+            }
+            // Reset input so same file can be selected again
+            e.target.value = '';
+        });
+
+        attachedImagesGrid.addEventListener('click', (e) => {
+            const removeBtn = e.target.closest('.remove-btn');
+            if (removeBtn) {
+                const index = parseInt(removeBtn.dataset.index, 10);
+                removeAttachedImage(index);
+            }
+        });
 
         // Gemini API image generation
         async function generateImageWithGemini(prompt) {
@@ -2021,6 +2272,22 @@
             }
 
             console.log('Generating image with prompt:', fullPrompt);
+            console.log('Attached images:', attachedImages.length);
+
+            // Build parts array: text prompt + attached images
+            const parts = [{ text: fullPrompt }];
+
+            // Add attached images as inlineData
+            for (const img of attachedImages) {
+                // Extract base64 data (remove data:image/xxx;base64, prefix)
+                const base64Data = img.dataUrl.split(',')[1];
+                parts.push({
+                    inlineData: {
+                        mimeType: img.mimeType,
+                        data: base64Data
+                    }
+                });
+            }
 
             const response = await fetch(
                 `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent?key=${geminiApiKey}`,
@@ -2028,7 +2295,7 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
+                        contents: [{ role: 'user', parts: parts }],
                         generationConfig: {
                             responseModalities: ['IMAGE', 'TEXT'],
                             imageConfig: {
@@ -2048,8 +2315,8 @@
             const data = await response.json();
             console.log('Gemini response:', data);
 
-            const parts = data.candidates?.[0]?.content?.parts || [];
-            const imgPart = parts.find(p => p.inlineData);
+            const responseParts = data.candidates?.[0]?.content?.parts || [];
+            const imgPart = responseParts.find(p => p.inlineData);
 
             if (!imgPart) throw new Error('No image generated');
 
